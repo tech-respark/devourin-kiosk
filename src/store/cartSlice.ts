@@ -2,7 +2,7 @@ import { PayloadAction, createSlice } from "@reduxjs/toolkit";
 import { RootState } from "./index";
 
 export interface CartItem {
-    id: string;
+    itemId: number;
     localCartId?: string; // unique string for the instance in cart
     categoryId: string;
     name: string;
@@ -27,7 +27,7 @@ const cartSlice = createSlice({
     initialState,
     reducers: {
         addToCart: (state, action: PayloadAction<Omit<CartItem, 'quantity' | 'localCartId'>>) => {
-            const existingItem = state.cartItems.find(i => i.id === action.payload.id);
+            const existingItem = state.cartItems.find(i => i.itemId === action.payload.itemId);
             if (existingItem) {
                 existingItem.quantity += 1;
             } else {
@@ -38,11 +38,21 @@ const cartSlice = createSlice({
                 });
             }
         },
-        removeFromCart: (state, action: PayloadAction<string>) => {
-            state.cartItems = state.cartItems.filter(i => i.id !== action.payload);
+        decrementFromCart: (state, action: PayloadAction<number>) => {
+            const existingItem = state.cartItems.find(i => i.itemId === action.payload);
+            if (existingItem) {
+                if (existingItem.quantity > 1) {
+                    existingItem.quantity -= 1;
+                } else {
+                    state.cartItems = state.cartItems.filter(i => i.itemId !== action.payload);
+                }
+            }
         },
-        updateQuantity: (state, action: PayloadAction<{ id: string, quantity: number }>) => {
-            const item = state.cartItems.find(i => i.id === action.payload.id);
+        removeFromCart: (state, action: PayloadAction<number>) => {
+            state.cartItems = state.cartItems.filter(i => i.itemId !== action.payload);
+        },
+        updateQuantity: (state, action: PayloadAction<{ itemId: number, quantity: number }>) => {
+            const item = state.cartItems.find(i => i.itemId === action.payload.itemId);
             if (item) {
                 item.quantity = action.payload.quantity;
             }
@@ -57,7 +67,7 @@ const cartSlice = createSlice({
     },
 });
 
-export const { addToCart, removeFromCart, updateQuantity, setGlobalInstruction, clearCart } = cartSlice.actions;
+export const { addToCart, decrementFromCart, removeFromCart, updateQuantity, setGlobalInstruction, clearCart } = cartSlice.actions;
 
 export const selectCartItems = (state: RootState) => state.cart.cartItems;
 export const selectCartSubtotal = (state: RootState) => state.cart.cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);

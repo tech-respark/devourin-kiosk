@@ -8,7 +8,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { BottomDock } from '../components/BottomDock';
 import CustomText from '../components/CustomText';
 import { ItemCard } from '../components/ItemCard';
-import { addToCart, selectCartItems, selectCartSubtotal } from '../src/store/cartSlice';
+import { addToCart, decrementFromCart, selectCartItems, selectCartSubtotal } from '../src/store/cartSlice';
 import { selectOrganisedMenuItems } from '../src/store/menuSlice';
 import { theme } from '../src/styles/theme';
 
@@ -35,7 +35,23 @@ export default function MenuDashboard() {
     ] : [];
 
     const handleAddToCart = (item: any) => {
-        dispatch(addToCart(item));
+        dispatch(addToCart({
+            itemId: item.itemId,
+            categoryId: item.categoryId,
+            name: item.name,
+            price: item.salePrice !== 0 ? item.salePrice : item.price,
+            isVeg: item.it === 1,
+            imageColor: item.imageColor || '#FCF1E4',
+        }));
+    };
+
+    const handleRemoveFromCart = (item: any) => {
+        dispatch(decrementFromCart(item.itemId));
+    };
+
+    const getItemQuantity = (itemId: number) => {
+        const item = cartItems.find((i: any) => i.itemId === itemId);
+        return item ? item.quantity : 0;
     };
 
     return (
@@ -92,7 +108,7 @@ export default function MenuDashboard() {
 
                     <FlatList
                         data={itemsToDisplay}
-                        keyExtractor={(item, index) => `${item.id}-${index}`}
+                        keyExtractor={(item, index) => `${item.itemId}-${index}`}
                         numColumns={theme.device.isTablet ? 3 : 2}
                         columnWrapperStyle={styles.row}
                         showsVerticalScrollIndicator={false}
@@ -103,7 +119,9 @@ export default function MenuDashboard() {
                                 price={item.salePrice !== 0 ? item.salePrice : item.price}
                                 isVeg={item.it === 1}
                                 imageColor={item.imageColor || '#FCF1E4'}
+                                quantity={getItemQuantity(item.itemId)}
                                 onAdd={() => handleAddToCart(item)}
+                                onRemove={() => handleRemoveFromCart(item)}
                             />
                         )}
                     />

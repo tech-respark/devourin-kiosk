@@ -10,15 +10,19 @@ interface ItemCardProps {
     price: number;
     isVeg: boolean;
     imageColor?: string; // used for placeholder tint
+    quantity?: number;
     onAdd: () => void;
+    onRemove?: () => void;
 }
 
 export const ItemCard: React.FC<ItemCardProps> = ({
     name,
     price,
     isVeg,
-    imageColor = '#FCF1E4',
-    onAdd
+    imageColor = theme.colors.theme_light2,
+    quantity = 0,
+    onAdd,
+    onRemove
 }) => {
     return (
         <View style={styles.cardContainer}>
@@ -27,33 +31,55 @@ export const ItemCard: React.FC<ItemCardProps> = ({
             </View>
 
             <View style={styles.contentContainer}>
-                <View style={styles.titleRow}>
-                    <CustomText fontFamily={theme.fonts.SemiBold} fontSize={theme.fontSize.medium} color={theme.colors.text} style={styles.titleText} numberOfLines={2}>
-                        {name}
-                    </CustomText>
-                    <View style={[styles.vegSquare, { borderColor: isVeg ? theme.colors.success : theme.colors.theme }]}>
-                        <View style={[styles.vegCircle, { backgroundColor: isVeg ? theme.colors.success : theme.colors.theme }]} />
+                <View style={styles.infoWrapper}>
+                    <View style={styles.titleRow}>
+                        <CustomText fontFamily={theme.fonts.Medium} fontSize={theme.fontSize.medium} color={theme.colors.text} style={styles.titleText} numberOfLines={2}>
+                            {name}
+                        </CustomText>
+                        <View style={[styles.vegSquare, { borderColor: isVeg ? theme.colors.success : theme.colors.theme }]}>
+                            <View style={[styles.vegCircle, { backgroundColor: isVeg ? theme.colors.success : theme.colors.theme }]} />
+                        </View>
                     </View>
                 </View>
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: theme.spacing.md }}>
+
+                <View style={styles.actionRow}>
                     <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.large} color={theme.colors.black}>
                         ₹{price.toFixed(1)}
                     </CustomText>
-                    <TouchableOpacity
-                        activeOpacity={0.7}
-                        onPress={onAdd}
-                    >
-                        <LinearGradient
-                            colors={['#DD7E33', '#D95C20']}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 0 }}
+
+                    {quantity > 0 ? (
+                        <LinearGradient style={styles.quantityContainer} colors={['#DD7E33', '#D95C20']}>
+                            <TouchableOpacity
+                                activeOpacity={0.7}
+                                onPress={onRemove}
+                                style={styles.qtyButton}
+                            >
+                                <Ionicons name="remove" size={20} color={theme.colors.white} />
+                            </TouchableOpacity>
+                            <View style={styles.qtyLabel}>
+                                <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.medium} color={theme.colors.white}>
+                                    {quantity}
+                                </CustomText>
+                            </View>
+                            <TouchableOpacity
+                                activeOpacity={0.7}
+                                onPress={onAdd}
+                                style={styles.qtyButton}
+                            >
+                                <Ionicons name="add" size={20} color={theme.colors.white} />
+                            </TouchableOpacity>
+                        </LinearGradient>
+                    ) : (
+                        <TouchableOpacity
+                            activeOpacity={0.7}
+                            onPress={onAdd}
                             style={styles.addButton}
                         >
-                            <CustomText fontFamily={theme.fonts.SemiBold} fontSize={theme.fontSize.medium} color={theme.colors.white}>
+                            <CustomText fontFamily={theme.fonts.SemiBold} fontSize={theme.fontSize.medium} color={theme.colors.theme}>
                                 + Add
                             </CustomText>
-                        </LinearGradient>
-                    </TouchableOpacity>
+                        </TouchableOpacity>
+                    )}
                 </View>
             </View>
         </View>
@@ -69,6 +95,7 @@ const styles = StyleSheet.create({
         shadowColor: "#000",
         boxShadow: "0 1px 2px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)",
         marginBottom: theme.spacing.md,
+        minHeight: 280, // Ensure cards have a consistent minimum height
     },
     imagePlaceholder: {
         height: 140,
@@ -77,17 +104,17 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         marginBottom: theme.spacing.md,
     },
-    placeholderIcon: {
-        fontSize: 48,
-    },
     contentContainer: {
-        flexDirection: 'column',
+        flex: 1,
+        justifyContent: 'space-between',
+    },
+    infoWrapper: {
+        marginBottom: theme.spacing.sm,
     },
     titleRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'flex-start',
-        marginBottom: theme.spacing.sm,
     },
     titleText: {
         flex: 1,
@@ -106,11 +133,40 @@ const styles = StyleSheet.create({
         height: 8,
         borderRadius: 4,
     },
+    actionRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginTop: theme.spacing.sm,
+    },
     addButton: {
         borderRadius: theme.border.sm,
         paddingVertical: 12,
         alignItems: 'center',
         justifyContent: 'center',
         width: 100,
+        backgroundColor: theme.colors.theme_light,
+        borderWidth: StyleSheet.hairlineWidth,
+        borderColor: theme.colors.theme
+    },
+    quantityContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F3F6FB',
+        borderRadius: theme.border.sm,
+        overflow: 'hidden',
+        width: 100,
+        height: 48,
+    },
+    qtyButton: {
+        flex: 1,
+        height: '100%',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    qtyLabel: {
+        flex: 1.2,
+        alignItems: 'center',
+        justifyContent: 'center',
     }
 });

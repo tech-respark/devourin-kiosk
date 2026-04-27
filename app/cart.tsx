@@ -20,13 +20,13 @@ export default function MyOrderCart() {
 
     const totalQty = cartItems.reduce((acc, item) => acc + item.quantity, 0);
 
-    const updateQty = (id: string, newQuantity: number) => {
+    const updateQty = (itemId: number, newQuantity: number) => {
         if (newQuantity < 1) return;
-        dispatch(updateQuantity({ id, quantity: newQuantity }));
+        dispatch(updateQuantity({ itemId, quantity: newQuantity }));
     };
 
-    const removeItem = (id: string) => {
-        dispatch(removeFromCart(id));
+    const removeItem = (itemId: number) => {
+        dispatch(removeFromCart(itemId));
     };
 
     const renderCartItem = ({ item }: { item: any }) => (
@@ -41,7 +41,7 @@ export default function MyOrderCart() {
                     <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.large} style={styles.itemName} numberOfLines={2}>
                         {item.name}
                     </CustomText>
-                    <TouchableOpacity onPress={() => removeItem(item.id)} style={styles.deleteBtn}>
+                    <TouchableOpacity onPress={() => removeItem(item.itemId)} style={styles.deleteBtn}>
                         <Ionicons name="trash-outline" size={24} color={theme.colors.grayDark} />
                     </TouchableOpacity>
                 </View>
@@ -60,7 +60,7 @@ export default function MyOrderCart() {
                     <View style={styles.qtyContainer}>
                         <TouchableOpacity
                             style={styles.qtyBtn}
-                            onPress={() => updateQty(item.id, item.quantity - 1)}
+                            onPress={() => updateQty(item.itemId, item.quantity - 1)}
                         >
                             <Ionicons name="remove" size={24} color={theme.colors.grayDark} />
                         </TouchableOpacity>
@@ -72,7 +72,7 @@ export default function MyOrderCart() {
                         </View>
 
                         <TouchableOpacity
-                            onPress={() => updateQty(item.id, item.quantity + 1)}
+                            onPress={() => updateQty(item.itemId, item.quantity + 1)}
                         >
                             <LinearGradient
                                 colors={['#DD7E33', '#D95C20']}
@@ -113,7 +113,7 @@ export default function MyOrderCart() {
             <View style={styles.listContainer}>
                 <FlatList
                     data={cartItems}
-                    keyExtractor={item => item.localCartId || item.id}
+                    keyExtractor={item => item.localCartId || item.itemId.toString()}
                     renderItem={renderCartItem}
                     showsVerticalScrollIndicator={false}
                     contentContainerStyle={styles.listContent}
