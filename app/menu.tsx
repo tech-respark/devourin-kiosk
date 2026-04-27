@@ -120,6 +120,7 @@ export default function MenuDashboard() {
                                 isVeg={item.it === 1}
                                 imageColor={item.imageColor || '#FCF1E4'}
                                 quantity={getItemQuantity(item.itemId)}
+                                maxWidth={theme.device.isTablet ? '31.5%' : '48.5%'}
                                 onAdd={() => handleAddToCart(item)}
                                 onRemove={() => handleRemoveFromCart(item)}
                             />

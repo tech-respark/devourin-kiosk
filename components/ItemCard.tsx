@@ -13,6 +13,7 @@ interface ItemCardProps {
     quantity?: number;
     onAdd: () => void;
     onRemove?: () => void;
+    maxWidth?: any;
 }
 
 export const ItemCard: React.FC<ItemCardProps> = ({
@@ -22,10 +23,11 @@ export const ItemCard: React.FC<ItemCardProps> = ({
     imageColor = theme.colors.theme_light2,
     quantity = 0,
     onAdd,
-    onRemove
+    onRemove,
+    maxWidth
 }) => {
     return (
-        <View style={styles.cardContainer}>
+        <View style={[styles.cardContainer, { maxWidth: maxWidth ?? '100%' }]}>
             <View style={[styles.imagePlaceholder, { backgroundColor: imageColor }]}>
                 <Ionicons name='fast-food-outline' size={60} color={theme.colors.theme} />
             </View>
