@@ -4,8 +4,10 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect } from 'react';
 import 'react-native-reanimated';
+import Toast from 'react-native-toast-message';
 import { Provider } from 'react-redux';
-import { store } from '../src/store';
+import { PersistGate } from 'redux-persist/integration/react';
+import { persistor, store } from '../src/store';
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
@@ -32,16 +34,19 @@ export default function RootLayout() {
 
   return (
     <Provider store={store}>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="index" />
-        <Stack.Screen name="login" />
-        <Stack.Screen name="mode" />
-        <Stack.Screen name="menu" />
-        <Stack.Screen name="cart" />
-        <Stack.Screen name="customer" />
-        <Stack.Screen name="payment" />
-      </Stack>
-      <StatusBar style="dark" />
+      <PersistGate loading={null} persistor={persistor}>
+        <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="index" />
+            <Stack.Screen name="login" />
+            <Stack.Screen name="mode" />
+            <Stack.Screen name="menu" />
+            <Stack.Screen name="cart" />
+            <Stack.Screen name="customer" />
+            <Stack.Screen name="payment" />
+        </Stack>
+        <StatusBar style="dark" />
+        <Toast />
+      </PersistGate>
     </Provider>
   );
 }

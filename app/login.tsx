@@ -1,43 +1,99 @@
-import { IP_ADDRESS } from '@/constants/Constants';
+import { OTA_VERSION } from '@/constants/Constants';
+import { Ionicons } from '@expo/vector-icons';
+import Constants from 'expo-constants';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
-import { ActivityIndicator, Image, KeyboardAvoidingView, Platform, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import { Dropdown } from 'react-native-element-dropdown';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import { useDispatch } from 'react-redux';
 import CustomText from '../components/CustomText';
-import { setBranchId, setDbName } from '../src/store/userSlice';
+import { setBranchId, setDbName, setIpAddress, setTaxes } from '../src/store/userSlice';
 import { theme } from '../src/styles/theme';
-import { makeAPIRequest } from '../src/utils/Helper';
+import { checkBranchValidity, makeAPIRequest } from '../src/utils/Helper';
 
 const LogoImage = require('../assets/icons/app_icon.png');
 const LogoWithText = require('../assets/icons/logo.png');
+
+interface Branch {
+    branchId: number;
+    branch: string;
+}
 
 export default function LoginScreen() {
     const dispatch = useDispatch();
     const router = useRouter();
 
-    const [restaurantName, setRestaurantName] = useState('plural4');
-    const [passcode, setPasscode] = useState('123456');
+    const [ipParts, setIpParts] = useState({ part1: '3', part2: '6', part3: '57', part4: '139' });
+    const [restaurantName, setRestaurantName] = useState('');
     const [loading, setLoading] = useState(false);
 
+    // Branch Selection
+    const [branchSelectionView, setBranchSelectionView] = useState(false);
+    const [branchOptions, setBranchOptions] = useState<Branch[]>([]);
+    const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
+
+    const inputRefs = {
+        part1: useRef<TextInput>(null),
+        part2: useRef<TextInput>(null),
+        part3: useRef<TextInput>(null),
+        part4: useRef<TextInput>(null),
+        dbName: useRef<TextInput>(null),
+    };
+
+    useEffect(() => {
+        // Auto-focus first input
+        setTimeout(() => inputRefs.part1.current?.focus(), 100);
+    }, []);
+
+    const handleIpChange = (text: string, part: keyof typeof ipParts) => {
+        const cleanText = text.trim();
+        setIpParts(prev => ({ ...prev, [part]: cleanText }));
+
+        if (cleanText.length === 3) {
+            if (part === 'part1') inputRefs.part2.current?.focus();
+            if (part === 'part2') inputRefs.part3.current?.focus();
+            if (part === 'part3') inputRefs.part4.current?.focus();
+            if (part === 'part4') inputRefs.dbName.current?.focus();
+        }
+    };
+
     const handleLoginPress = async () => {
-        if (!restaurantName || !passcode) {
-            Toast.show({ type: "warning", text1: "Please fill all fields" });
+        const ipString = `${ipParts.part1}.${ipParts.part2}.${ipParts.part3}.${ipParts.part4}`;
+        if (!ipParts.part1 || !ipParts.part2 || !ipParts.part3 || !ipParts.part4 || !restaurantName) {
+            Toast.show({ type: "warning", text1: "Please enter valid IP and Restaurant Name" });
             return;
         }
+
         setLoading(true);
-        const baseUrl = `http://${IP_ADDRESS}:8080/nebula-services-1.6/${restaurantName.trim().toLowerCase()}/`;
+        const dbName = restaurantName.trim().toLowerCase();
+        const baseUrl = `http://${ipString}:8080/nebula-services-1.6/${dbName}/`;
+
         try {
-            const headers: RequestInit = { headers: { "Content-Type": "application/json", app: restaurantName.trim().toLowerCase() } };
-            const branchDetailsResponse = await makeAPIRequest(baseUrl + 'getBranchDetails', null, "GET", headers, "Invalid Configuration", true);
-            if (branchDetailsResponse && branchDetailsResponse.branches?.length > 0) {
-                const branchId = branchDetailsResponse.branches[0].branchId;
-                dispatch(setDbName(restaurantName));
-                dispatch(setBranchId(branchId.toString()));
-                Toast.show({ type: "success", text1: 'Device Configured Successfully' });
-                router.replace('/mode');
+            const headers = { headers: { "Content-Type": "application/json", app: dbName } };
+            const response = await makeAPIRequest(baseUrl + 'getBranchDetails', null, "GET", headers, "Invalid Configuration", true);
+
+            if (response) {
+                const domainOrIp = response.applicationDomain || ipString;
+                dispatch(setDbName(dbName));
+                dispatch(setIpAddress(domainOrIp));
+                dispatch(setTaxes(response.taxes));
+
+                if (response.branches?.length > 1) {
+                    setBranchOptions(response.branches);
+                    setBranchSelectionView(true);
+                } else if (response.branches?.length === 1) {
+                    const branch = response.branches[0];
+                    if (await checkBranchValidity(baseUrl, branch.branchId)) {
+                        dispatch(setBranchId(branch.branchId.toString()));
+                        Toast.show({ type: "success", text1: 'Device Configured Successfully' });
+                        router.replace('/mode');
+                    }
+                } else {
+                    Toast.show({ type: "error", text1: "No branches found for this account" });
+                }
             }
         } catch (error) {
             Toast.show({ type: "error", text1: "Connection Failed" });
@@ -46,88 +102,135 @@ export default function LoginScreen() {
         }
     };
 
+    const handleBranchSubmit = async () => {
+        if (!selectedBranch) {
+            Toast.show({ type: "warning", text1: "Please select a branch" });
+            return;
+        }
+
+        const ipString = `${ipParts.part1}.${ipParts.part2}.${ipParts.part3}.${ipParts.part4}`;
+        const dbName = restaurantName.trim().toLowerCase();
+        const baseUrl = `http://${ipString}:8080/nebula-services-1.6/${dbName}/`;
+
+        if (await checkBranchValidity(baseUrl, selectedBranch.branchId)) {
+            dispatch(setBranchId(selectedBranch.branchId.toString()));
+            router.replace('/mode');
+        }
+    };
+
     return (
         <SafeAreaView style={styles.container}>
-            {/* Background Decorative Circles */}
+            {/* Background Decorations */}
             <View style={styles.bgCircleBlue} />
             <View style={styles.bgCircleYellow} />
             <View style={styles.bgCircleMint} />
             <Image source={LogoImage} style={styles.bgLogoHalf} />
 
             <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.content}>
+                <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
 
-                <View style={styles.logoHeader}>
-                    <Image source={LogoWithText} style={styles.logoIcon} />
-                </View>
-
-                <View style={styles.formContainer}>
-                    <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.headingXXX} style={styles.title}>
-                        System Setup
-                    </CustomText>
-                    <CustomText color={theme.colors.grayDark} fontSize={theme.fontSize.medium} style={styles.subtitle}>
-                        Configure your kiosk terminal
-                    </CustomText>
-
-                    <View style={styles.inputWrapper}>
-                        <CustomText fontFamily={theme.fonts.SemiBold} fontSize={theme.fontSize.small} style={styles.label}>
-                            Restaurant Name
-                        </CustomText>
-                        <TextInput
-                            style={styles.input}
-                            value={restaurantName}
-                            onChangeText={setRestaurantName}
-                            placeholder="e.g. plural"
-                            placeholderTextColor={theme.colors.light_gray}
-                            autoCapitalize="none"
-                        />
+                    <View style={styles.logoHeader}>
+                        <Image source={LogoWithText} style={styles.logoIcon} />
                     </View>
 
-                    <View style={styles.inputWrapper}>
-                        <CustomText fontFamily={theme.fonts.SemiBold} fontSize={theme.fontSize.small} style={styles.label}>
-                            Password
+                    <View style={styles.formContainer}>
+                        <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.headingXXX} style={styles.title}>
+                            System Setup
                         </CustomText>
-                        <TextInput
-                            style={styles.input}
-                            value={passcode}
-                            onChangeText={setPasscode}
-                            placeholder="••••••"
-                            placeholderTextColor={theme.colors.light_gray}
-                            keyboardType="number-pad"
-                            secureTextEntry
-                            maxLength={6}
-                        />
-                    </View>
+                        <CustomText color={theme.colors.grayDark} fontSize={theme.fontSize.medium} style={styles.subtitle}>
+                            Configure your terminal endpoint
+                        </CustomText>
 
-                    <TouchableOpacity activeOpacity={0.8} onPress={handleLoginPress} disabled={loading}>
-                        <LinearGradient
-                            colors={['#DD7E33', '#D95C20']}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 0 }}
-                            style={styles.loginBtnGrad}
-                        >
-                            {loading ? (
-                                <ActivityIndicator color={theme.colors.white} />
-                            ) : (
-                                <CustomText fontFamily={theme.fonts.SemiBold} fontSize={theme.fontSize.heading} color={theme.colors.white}>
-                                    Configure and Login
+                        {branchSelectionView ? (
+                            /* Branch Selection View */
+                            <View style={styles.branchContainer}>
+                                <CustomText fontFamily={theme.fonts.SemiBold} fontSize={theme.fontSize.medium} style={styles.label}>
+                                    Select Restaurant Branch
                                 </CustomText>
-                            )}
-                        </LinearGradient>
-                    </TouchableOpacity>
-                </View>
+                                <Dropdown
+                                    style={styles.dropdown}
+                                    placeholderStyle={[styles.dropdownText, { color: 'lightgray' }]}
+                                    selectedTextStyle={styles.dropdownText}
+                                    data={branchOptions.map(b => ({ label: b.branch, value: b.branchId }))}
+                                    labelField="label"
+                                    valueField="value"
+                                    placeholder="Choose your branch"
+                                    value={selectedBranch?.branchId}
+                                    onChange={item => {
+                                        const branch = branchOptions.find(b => b.branchId === item.value);
+                                        setSelectedBranch(branch || null);
+                                    }}
+                                    renderRightIcon={() => (
+                                        <Ionicons name="chevron-down" size={20} color={theme.colors.text} />
+                                    )}
+                                />
+                                <TouchableOpacity activeOpacity={0.8} onPress={handleBranchSubmit} style={styles.actionBtnWrapper}>
+                                    <LinearGradient colors={['#DD7E33', '#D95C20']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.loginBtnGrad}>
+                                        <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.large} color="#fff">
+                                            Confirm Branch
+                                        </CustomText>
+                                    </LinearGradient>
+                                </TouchableOpacity>
+                                <TouchableOpacity onPress={() => setBranchSelectionView(false)} style={styles.backLink}>
+                                    <CustomText color={theme.colors.grayDark}>Back to IP Config</CustomText>
+                                </TouchableOpacity>
+                            </View>
+                        ) : (
+                            /* IP and Name View */
+                            <View>
+                                <CustomText fontFamily={theme.fonts.SemiBold} fontSize={theme.fontSize.medium} style={styles.label}>
+                                    IP Configuration
+                                </CustomText>
+                                <View style={styles.ipRow}>
+                                    {(['part1', 'part2', 'part3', 'part4'] as const).map((part, index) => (
+                                        <View key={part} style={styles.ipInputBox}>
+                                            <TextInput
+                                                ref={inputRefs[part]}
+                                                style={styles.ipInput}
+                                                value={ipParts[part]}
+                                                onChangeText={text => handleIpChange(text, part)}
+                                                keyboardType="number-pad"
+                                                maxLength={3}
+                                                selectTextOnFocus
+                                                placeholder="0"
+                                                placeholderTextColor={'lightgray'}
+                                            />
+                                        </View>
+                                    ))}
+                                </View>
 
-                <View style={styles.footer}>
-                    <CustomText color={theme.colors.grayDark} fontSize={theme.fontSize.small} style={styles.footerText}>
-                        By continuing, you agree to our{' '}
-                        <CustomText fontFamily={theme.fonts.SemiBold} fontSize={theme.fontSize.small} style={styles.linkText}>
-                            Terms of Service
+                                <CustomText fontFamily={theme.fonts.SemiBold} fontSize={theme.fontSize.medium} style={[styles.label, { marginTop: 20 }]}>
+                                    Restaurant Name
+                                </CustomText>
+                                <TextInput
+                                    ref={inputRefs.dbName}
+                                    style={styles.dbInput}
+                                    value={restaurantName}
+                                    onChangeText={setRestaurantName}
+                                    placeholder="e.g. delicious_bistro"
+                                    autoCapitalize="none"
+                                    placeholderTextColor={'lightgray'}
+                                />
+
+                                <TouchableOpacity activeOpacity={0.8} onPress={handleLoginPress} disabled={loading} style={styles.actionBtnWrapper}>
+                                    <LinearGradient colors={['#DD7E33', '#D95C20']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.loginBtnGrad}>
+                                        {loading ? <ActivityIndicator color="#fff" /> : (
+                                            <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.large} color="#fff">
+                                                Configure and Login
+                                            </CustomText>
+                                        )}
+                                    </LinearGradient>
+                                </TouchableOpacity>
+                            </View>
+                        )}
+                    </View>
+
+                    <View style={styles.footer}>
+                        <CustomText color={theme.colors.grayDark} fontSize={theme.fontSize.small} style={styles.footerText}>
+                            Devourin Kiosk v{Constants.expoConfig?.version}_{OTA_VERSION}
                         </CustomText>
-                        {' '}and{' '}
-                        <CustomText fontFamily={theme.fonts.SemiBold} fontSize={theme.fontSize.small} style={styles.linkText}>
-                            Privacy Policy
-                        </CustomText>
-                    </CustomText>
-                </View>
+                    </View>
+                </ScrollView>
             </KeyboardAvoidingView>
         </SafeAreaView>
     );
@@ -136,106 +239,159 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: theme.colors.white,
+        backgroundColor: '#F8FAFF',
     },
     bgCircleBlue: {
         position: 'absolute',
-        top: -theme.device.width * 0.2,
-        left: -theme.device.width * 0.1,
-        width: theme.device.width * 0.6,
-        height: theme.device.width * 0.6,
-        borderRadius: theme.device.width * 0.4,
+        top: -100,
+        left: -100,
+        width: 400,
+        height: 400,
+        borderRadius: 200,
         backgroundColor: '#EBF2FF',
         opacity: 0.8,
     },
     bgCircleYellow: {
         position: 'absolute',
-        top: theme.device.height * 0.4,
-        right: -theme.device.width * 0.3,
-        width: theme.device.width * 0.55,
-        height: theme.device.width * 0.55,
-        borderRadius: theme.device.width * 0.3,
+        bottom: -50,
+        right: -50,
+        width: 300,
+        height: 300,
+        borderRadius: 150,
         backgroundColor: '#FEF7EB',
         opacity: 0.8,
     },
     bgCircleMint: {
         position: 'absolute',
-        bottom: -theme.device.height * 0.1,
-        left: -theme.device.width * 0.1,
-        width: theme.device.width * 0.6,
-        height: theme.device.width * 0.6,
-        borderRadius: theme.device.width * 0.3,
+        bottom: theme.device.height * 0.15,
+        left: -75,
+        width: 300,
+        height: 300,
+        borderRadius: 150,
         backgroundColor: '#EBFBF5',
-        opacity: 0.8,
+        opacity: 0.8
     },
     bgLogoHalf: {
         position: 'absolute',
-        width: theme.device.width * 0.6,
-        height: theme.device.width * 0.6,
-        top: theme.device.height * 0.05,
-        right: -theme.device.width * 0.3,
+        width: 400,
+        height: 400,
+        top: 100,
+        right: -200,
         opacity: 0.1,
     },
     content: {
         flex: 1,
+    },
+    scrollContent: {
+        flexGrow: 1,
         alignItems: 'center',
+        justifyContent: 'center',
         padding: theme.spacing.lg,
-        justifyContent: 'space-between',
+        paddingTop: theme.device.height * 0.05,
     },
     logoHeader: {
-        marginTop: theme.device.height * 0.06,
+        marginBottom: theme.spacing.xxl,
     },
     logoIcon: {
-        width: theme.device.width * 0.5,
+        width: theme.device.width * 0.6,
         height: 120,
         resizeMode: 'contain',
     },
     formContainer: {
         width: '100%',
-        maxWidth: 450,
-        backgroundColor: theme.colors.white,
-        padding: theme.spacing.xl,
-        borderRadius: theme.border.xl,
-        boxShadow: '0px 4px 8px 0px rgba(0, 0, 0, 0.2)'
+        maxWidth: 550,
+        backgroundColor: '#fff',
+        padding: theme.spacing.xxl,
+        borderRadius: 30,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.05,
+        shadowRadius: 20,
+        elevation: 10,
     },
     title: {
-        marginBottom: theme.spacing.xs,
         textAlign: 'center',
+        marginBottom: 10,
+        color: '#162640',
     },
     subtitle: {
-        marginBottom: theme.spacing.xl,
         textAlign: 'center',
-    },
-    inputWrapper: {
-        marginBottom: theme.spacing.lg,
+        marginBottom: 40,
     },
     label: {
-        marginBottom: theme.spacing.sm,
-        marginLeft: theme.spacing.xs,
+        marginBottom: 15,
+        color: '#162640',
     },
-    input: {
+    ipRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        gap: 10,
+    },
+    ipInputBox: {
+        flex: 1,
         backgroundColor: '#F3F6FB',
-        borderRadius: theme.border.lg,
-        padding: theme.spacing.md,
-        fontSize: theme.fontSize.medium,
-        color: theme.colors.text,
+        borderRadius: 15,
+        height: 65,
+        justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: '#EBF2FF',
+    },
+    ipInput: {
+        textAlign: 'center',
+        fontSize: 22,
+        fontFamily: 'Poppins-SemiBold',
+        color: '#162640',
+    },
+    dbInput: {
+        backgroundColor: '#F3F6FB',
+        borderRadius: 15,
+        height: 65,
+        paddingHorizontal: 20,
+        fontSize: 18,
+        fontFamily: 'Poppins-Medium',
+        color: '#162640',
+        borderWidth: 1,
+        borderColor: '#EBF2FF',
+    },
+    actionBtnWrapper: {
+        marginTop: 40,
     },
     loginBtnGrad: {
-        paddingVertical: theme.spacing.md,
-        borderRadius: theme.border.lg,
+        height: 70,
+        borderRadius: 15,
         alignItems: 'center',
-        marginTop: theme.spacing.md,
+        justifyContent: 'center',
+        shadowColor: "#D95C20",
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.2,
+        shadowRadius: 15,
+        elevation: 8,
+    },
+    branchContainer: {
+        width: '100%',
+    },
+    dropdown: {
+        height: 65,
+        backgroundColor: '#F3F6FB',
+        borderRadius: 15,
+        paddingHorizontal: 20,
+        borderWidth: 1,
+        borderColor: '#EBF2FF',
+    },
+    dropdownText: {
+        fontSize: 18,
+        fontFamily: 'Poppins-Medium',
+        color: '#162640',
+    },
+    backLink: {
+        marginTop: 20,
+        alignItems: 'center',
     },
     footer: {
-        marginBottom: theme.spacing.lg,
-        paddingHorizontal: theme.spacing.lg,
+        marginTop: 40,
+        marginBottom: 20,
     },
     footerText: {
-        textAlign: 'center',
-        lineHeight: 20,
-    },
-    linkText: {
-        textDecorationLine: 'underline',
-        color: theme.colors.text,
-    },
+        color: '#999',
+    }
 });

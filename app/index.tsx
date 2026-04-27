@@ -8,7 +8,9 @@ import Animated, {
   withDelay,
   withTiming
 } from "react-native-reanimated";
+import { useSelector } from "react-redux";
 import CustomText from "../components/CustomText";
+import { selectDbName } from "../src/store/userSlice";
 import { FONTS } from "../src/styles/Fonts";
 
 // Require the explicit logo image path
@@ -19,6 +21,7 @@ const isTablet = width >= 600;
 
 export default function SplashScreen() {
   const router = useRouter();
+  const dbName = useSelector(selectDbName);
 
   // Animation Values
   const rotation = useSharedValue(360);
@@ -29,11 +32,15 @@ export default function SplashScreen() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      router.replace('/login');
+      if (dbName) {
+        router.replace('/mode');
+      } else {
+        router.replace('/login');
+      }
     }, 2500);
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [dbName]);
 
   useEffect(() => {
     rotation.value = withTiming(0, { duration: 1000 });

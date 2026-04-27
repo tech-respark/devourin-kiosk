@@ -114,7 +114,7 @@ export default function MenuDashboard() {
             <BottomDock
                 itemCount={cartItems.reduce((acc: any, i: any) => acc + i.quantity, 0)}
                 subTotal={cartSubtotal}
-                onCancel={() => { router.back() }}
+                onCancel={() => { router.replace('/mode') }}
                 onProceed={() => router.push('/cart')}
             />
         </SafeAreaView>

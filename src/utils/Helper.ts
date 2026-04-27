@@ -163,10 +163,13 @@ export const organizeMenu = (groupedItems: any[], categories: any[]) => {
 export const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export const checkBranchValidity = async (apiBaseUrl: string, branchId: string | number) => {
-    const url = `${apiBaseUrl}getBranchDetails`;
-    const response = await makeAPIRequest(url, null, 'GET', {}, 'Branch verification failed', false);
-    if (response && response.branches) {
-        return response.branches.some((b: any) => b.branchId.toString() === branchId.toString());
+    const url = `${apiBaseUrl}isexpired`;
+    const headers: any = { headers: { 'Content-Type': "application/json", br: branchId, src: 'Kiosk' } };
+    const response = await makeAPIRequest(url, null, 'POST', headers, 'Branch verification failed', false);
+    
+    // In our simplified kiosk version, if we get a response it means it's not 401/412
+    if (response) {
+        return true;
     }
     return false;
 };

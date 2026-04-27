@@ -47,6 +47,14 @@ const userSlice = createSlice({
         },
         logoutStaff: (state) => {
             state.userData = null;
+        },
+        resetUser: (state) => {
+            state.dbName = null;
+            state.branchId = null;
+            state.userData = null;
+            state.mobileSettings = null;
+            state.branchConfigs = null;
+            state.taxes = null;
         }
     },
 });
@@ -60,6 +68,7 @@ export const {
     setBranchConfigs,
     setTaxes,
     logoutStaff,
+    resetUser,
 } = userSlice.actions;
 
 export const selectIpAddress = (state: any) => state.user.ipAddress;

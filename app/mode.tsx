@@ -1,29 +1,69 @@
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useDispatch, useSelector } from 'react-redux';
+import { AdminModal } from '../components/AdminModal';
 import CustomText from '../components/CustomText';
 import { useInitialDataFetch } from '../src/hooks/useInitialDataFetch';
+import { clearCart } from '../src/store/cartSlice';
+import { selectOrganisedMenuItems } from '../src/store/menuSlice';
+import { resetUser } from '../src/store/userSlice';
 import { theme } from '../src/styles/theme';
 
 export default function ModeSelectionScreen() {
     const router = useRouter();
+    const dispatch = useDispatch();
+    const organisedMenu = useSelector(selectOrganisedMenuItems);
     const { callInitialSetUpAPIAsync, loading } = useInitialDataFetch();
-    const [isConfigured, setIsConfigured] = useState(false);
+    
+    // If data already exists in redux, we don't need to show "Synchronizing" loader
+    const [isConfigured, setIsConfigured] = useState(organisedMenu && organisedMenu.length > 0);
+
+    // Admin Modal Logic
+    const [logoClickCount, setLogoClickCount] = useState(0);
+    const [showAdminModal, setShowAdminModal] = useState(false);
 
     useEffect(() => {
         const initializeSystem = async () => {
-            await callInitialSetUpAPIAsync();
+            // Only fetch if we don't have data yet
+            if (!organisedMenu || organisedMenu.length === 0) {
+                await callInitialSetUpAPIAsync();
+            }
             setIsConfigured(true);
         };
         initializeSystem();
     }, []);
 
     const handleSelectMode = (mode: string) => {
-        // dispatch(setOrderType(mode)) - assuming order type logic handles this
         router.replace('/menu');
+    };
+
+    const handleLogoClick = () => {
+        const newCount = logoClickCount + 1;
+        setLogoClickCount(newCount);
+        if (newCount >= 4) {
+            setShowAdminModal(true);
+            setLogoClickCount(0);
+        }
+        // Auto reset click count if no click for 3 seconds
+        setTimeout(() => setLogoClickCount(0), 3000);
+    };
+
+    const handleResync = async () => {
+        setShowAdminModal(false);
+        setIsConfigured(false);
+        await callInitialSetUpAPIAsync();
+        setIsConfigured(true);
+    };
+
+    const handleLogout = () => {
+        setShowAdminModal(false);
+        dispatch(resetUser());
+        dispatch(clearCart());
+        router.replace('/login');
     };
 
     if (loading || !isConfigured) {
@@ -39,7 +79,7 @@ export default function ModeSelectionScreen() {
 
     return (
         <View style={styles.mainContainer}>
-            {/* Full Background Layer - Positioned to the left but not clipped by a narrow container */}
+            {/* Background Layer */}
             <View style={styles.backgroundLayer}>
                 <Image
                     source={require('../assets/icons/landing_page_bg.jpg')}
@@ -48,18 +88,18 @@ export default function ModeSelectionScreen() {
                 />
             </View>
 
-            {/* Main Content Layer - Centered over the background */}
+            {/* Main Content Layer */}
             <SafeAreaView style={styles.contentLayer}>
-                {/* Restaurant Logo */}
-                <View style={styles.logoContainer}>
+                {/* Restaurant Logo with Hidden Click Handle */}
+                <Pressable onPress={handleLogoClick} style={styles.logoContainer}>
                     <Image
                         source={require('../assets/icons/sihi_logo.png')}
                         style={styles.restaurantLogo}
                         resizeMode="contain"
                     />
-                </View>
+                </Pressable>
 
-                {/* Center Group (Question + Buttons) */}
+                {/* Center Group */}
                 <View style={styles.centerGroup}>
                     <View style={styles.questionContainer}>
                         <CustomText
@@ -72,10 +112,9 @@ export default function ModeSelectionScreen() {
                         </CustomText>
                     </View>
 
+                    {/* Options Cards */}
                     <View style={styles.optionsContainer}>
-                        <Pressable
-                            onPress={() => handleSelectMode('Dinein')}
-                        >
+                        <Pressable onPress={() => handleSelectMode('Dinein')}>
                             <LinearGradient
                                 colors={['#DD7E33', '#D95C20']}
                                 start={{ x: 0, y: 0 }}
@@ -86,14 +125,12 @@ export default function ModeSelectionScreen() {
                                     <MaterialCommunityIcons name="silverware-fork-knife" size={100} color="#fff" />
                                 </View>
                                 <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.headingXX} color="#fff">
-                                    Dine-In
+                                    Order Now
                                 </CustomText>
                             </LinearGradient>
                         </Pressable>
 
-                        <Pressable
-                            onPress={() => handleSelectMode('Takeaway')}
-                        >
+                        {/* <Pressable onPress={() => handleSelectMode('Takeaway')}>
                             <LinearGradient
                                 colors={['#DD7E33', '#D95C20']}
                                 start={{ x: 0, y: 0 }}
@@ -107,7 +144,7 @@ export default function ModeSelectionScreen() {
                                     Takeaway
                                 </CustomText>
                             </LinearGradient>
-                        </Pressable>
+                        </Pressable> */}
                     </View>
                 </View>
 
@@ -125,6 +162,13 @@ export default function ModeSelectionScreen() {
                     </View>
                 </View>
             </SafeAreaView>
+
+            <AdminModal
+                visible={showAdminModal}
+                onClose={() => setShowAdminModal(false)}
+                onResync={handleResync}
+                onLogout={handleLogout}
+            />
         </View>
     );
 }
@@ -148,7 +192,7 @@ const styles = StyleSheet.create({
         position: 'absolute',
         top: 0,
         left: 0,
-        width: '35%', // Allows the food strip to be prominent but absolute
+        width: '35%',
         height: '100%',
         zIndex: 0,
     },
@@ -166,7 +210,7 @@ const styles = StyleSheet.create({
     logoContainer: {
         marginTop: theme.spacing.xl,
         width: '70%',
-        height: 200,
+        height: 180,
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -196,7 +240,6 @@ const styles = StyleSheet.create({
     modeButton: {
         width: 280,
         height: 380,
-        backgroundColor: theme.colors.theme,
         borderRadius: 25,
         justifyContent: 'center',
         alignItems: 'center',
