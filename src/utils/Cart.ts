@@ -163,7 +163,7 @@ export const buildKioskOrderPayload = (
         discounts: [],
         isCurrentOrder: true,
         isItemSelected: false,
-        orderITems: orderItems,
+        orderItems: orderItems,
         mergeTables: null,
         qtyToServed: 0,
         orderPrice: roundedTotal,

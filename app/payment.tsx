@@ -44,6 +44,7 @@ export default function PaymentSelection() {
             const payload = buildKioskOrderPayload(cartItems as any, selectedTxnName);
             const reqId = Date.now();
             const headers: any = { headers: { 'Content-Type': 'application/json', rqid: reqId } };
+            console.log(JSON.stringify(payload))
             const response = await makeAPIRequest(`${apiBaseUrl}orderbystaffmobile`, payload, 'POST', headers);
             if (response) {
                 dispatch(clearCart());

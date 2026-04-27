@@ -59,10 +59,14 @@ export const AddOnPortionModal: React.FC<AddOnPortionModalProps> = ({ visible, i
     // Organize addons by category for this item
     useEffect(() => {
         if (!item) return;
+        const targetId = String(item.itemId);
         const organized = addOnItems.reduce((acc: any[], addonItem: any) => {
-            if (String(addonItem.itemId) !== String(item.itemId)) return acc;
+            const addonItemId = String(addonItem.itemId || addonItem.itemid || '');
+            if (addonItemId !== targetId) return acc;
+            
             const matchingCategory = addOnCategories.find((cat: any) => String(cat.id) === String(addonItem.addonCatId));
-            const categoryName = addonItem.category || 'Others';
+            const categoryName = addonItem.category || matchingCategory?.name || 'Extra Add-ons';
+            
             const existing = acc.find((c: any) => c.title === categoryName);
             if (existing) {
                 existing.data.push(addonItem);
@@ -177,165 +181,158 @@ export const AddOnPortionModal: React.FC<AddOnPortionModalProps> = ({ visible, i
     };
 
     if (!visible || !item) return null;
+
     return (
         <View style={{ ...StyleSheet.absoluteFillObject, zIndex: 99999 }}>
             <View style={styles.overlay}>
                 <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
                 <View style={styles.container}>
-                    {/* Header */}
+                    {/* Header with Image & Title */}
                     <View style={styles.header}>
-                        <View style={styles.headerLeft}>
-                            <View style={[styles.vegDot, { backgroundColor: item.it === 1 ? theme.colors.success : theme.colors.theme }]} />
-                            <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.headingX} color={theme.colors.text} numberOfLines={1} style={{ flex: 1 }}>
-                                {itemName}
-                            </CustomText>
+                        <View style={styles.headerRow}>
+                            <View style={[styles.imageBox, { backgroundColor: '#FFF7ED' }]}>
+                                <Ionicons name="pizza-outline" size={80} color="#D95C20" />
+                                <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.xsmall} color="#D95C20" style={{ marginTop: 4 }}>IMAGE</CustomText>
+                            </View>
+
+                            <View style={styles.headerInfo}>
+                                <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.xsmall} color="#E53935" style={{ marginBottom: 4 }}>
+                                    BESTSELLER
+                                </CustomText>
+                                <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.headingXX} color="#162640" style={{ marginBottom: 6 }}>
+                                    {itemName}
+                                </CustomText>
+                                <CustomText fontSize={theme.fontSize.small} color="#666" style={{ marginBottom: 15 }} numberOfLines={2}>
+                                    Classic delight with premium ingredients and hand-crafted dough.
+                                </CustomText>
+
+                                <View style={styles.priceRow}>
+                                    <View style={[styles.vegSquare, { borderColor: item.it === 1 ? theme.colors.success : theme.colors.theme }]}>
+                                        <View style={[styles.vegCircle, { backgroundColor: item.it === 1 ? theme.colors.success : theme.colors.theme }]} />
+                                    </View>
+                                    <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.headingXX} color="#162640">
+                                        ₹{portionPrice}
+                                    </CustomText>
+                                </View>
+                            </View>
+
+                            <TouchableOpacity onPress={onClose} style={styles.closeIcon}>
+                                <Ionicons name="close" size={24} color="#666" />
+                            </TouchableOpacity>
                         </View>
-                        <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-                            <Ionicons name="close" size={24} color={theme.colors.text} />
-                        </TouchableOpacity>
                     </View>
 
-                    <ScrollView style={styles.body} showsVerticalScrollIndicator={false}>
-                        {/* Portion Selector */}
+                    <ScrollView 
+                        style={styles.body} 
+                        contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}
+                        showsVerticalScrollIndicator={false}
+                    >
+                        {/* Size (Portions) Section */}
                         {item?.portions && item.portions.length > 0 && (
                             <View style={styles.section}>
-                                <CustomText fontFamily={theme.fonts.SemiBold} fontSize={theme.fontSize.medium} color={theme.colors.text} style={styles.sectionTitle}>
-                                    Select Portion
+                                <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.medium} color="#162640" style={{ marginBottom: 4 }}>
+                                    Size
                                 </CustomText>
-                                <FlatList
-                                    data={item.portions}
-                                    scrollEnabled={false}
-                                    keyExtractor={(_, i) => i.toString()}
-                                    renderItem={({ item: portion }) => {
+                                <CustomText fontSize={theme.fontSize.xsmall} color="#666" style={{ marginBottom: 15 }}>
+                                    Please select any one option
+                                </CustomText>
+
+                                <View style={styles.portionWrapper}>
+                                    {item.portions.map((portion: any) => {
                                         const isSelected = selectedPortion?.customAttributeId === portion.customAttributeId;
                                         const portionDisplayPrice = portion.salePrice && portion.salePrice !== 0 ? portion.salePrice : portion.price;
                                         return (
-                                            <Pressable style={styles.portionRow} onPress={() => setSelectedPortion(portion)}>
-                                                <CustomText
-                                                    fontFamily={isSelected ? theme.fonts.SemiBold : theme.fonts.Regular}
-                                                    fontSize={theme.fontSize.medium}
-                                                    color={theme.colors.text}
-                                                    style={{ flex: 1 }}
-                                                >
+                                            <TouchableOpacity
+                                                key={portion.customAttributeId}
+                                                style={[styles.portionCard, isSelected && styles.portionCardActive]}
+                                                onPress={() => setSelectedPortion(portion)}
+                                            >
+                                                <View style={[styles.radioCircle, isSelected && styles.radioCircleActive]}>
+                                                    {isSelected && <View style={styles.radioDot} />}
+                                                </View>
+                                                <CustomText fontFamily={isSelected ? theme.fonts.SemiBold : theme.fonts.Medium} fontSize={theme.fontSize.small} color="#333" style={{ flex: 1, marginLeft: 8 }}>
                                                     {portion.attributeName}
                                                 </CustomText>
-                                                <CustomText fontFamily={isSelected ? theme.fonts.SemiBold : theme.fonts.Regular} fontSize={theme.fontSize.medium} color={theme.colors.black}>
-                                                    ₹{portionDisplayPrice}
-                                                </CustomText>
-                                                <View style={[styles.radioOuter, isSelected && styles.radioOuterSelected]}>
-                                                    {isSelected && <View style={styles.radioInner} />}
-                                                </View>
-                                            </Pressable>
+                                                <CustomText color="#666" fontSize={theme.fontSize.small}>₹{portionDisplayPrice}</CustomText>
+                                            </TouchableOpacity>
                                         );
-                                    }}
+                                    })}
+                                </View>
+                            </View>
+                        )}
+
+                        {/* Extra Toppings (Add-ons) Grid */}
+                        {organizedAddOn.map((cat, catIdx) => (
+                            <View key={cat.title} style={styles.section}>
+                                <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.medium} color="#162640" style={{ marginBottom: 15 }}>
+                                    {cat.title}
+                                </CustomText>
+                                <View style={styles.addonGrid}>
+                                    {cat.data.map((addon: any) => {
+                                        const found = selectedAddons.find((a) => a.addonId === addon.addonId);
+                                        const isSelected = !!found;
+                                        return (
+                                            <TouchableOpacity
+                                                key={addon.addonId}
+                                                style={styles.addonCard}
+                                                onPress={() => handleAddonChange(addon, isSelected ? -1 : 1, catIdx)}
+                                                activeOpacity={0.7}
+                                            >
+                                                <View style={[styles.checkbox, isSelected && styles.checkboxActive]}>
+                                                    {isSelected && <Ionicons name="checkmark" size={14} color="#fff" />}
+                                                </View>
+                                                <CustomText fontSize={theme.fontSize.small} color="#333" style={{ flex: 1, marginLeft: 10 }}>
+                                                    {addon.addon}
+                                                </CustomText>
+                                                <CustomText fontSize={theme.fontSize.xsmall} color="#666">
+                                                    + ₹{addon.price}
+                                                </CustomText>
+                                            </TouchableOpacity>
+                                        );
+                                    })}
+                                </View>
+                            </View>
+                        ))}
+
+                        {/* Instructions */}
+                        <View style={styles.instructionSection}>
+                            <View style={styles.instructionHeader}>
+                                <Ionicons name="chatbubble-outline" size={18} color="#666" />
+                                <TextInput
+                                    style={styles.instructionInputModern}
+                                    placeholder="Add Instructions (Optional)"
+                                    placeholderTextColor="#999"
+                                    value={instructions}
+                                    onChangeText={setInstructions}
                                 />
                             </View>
-                        )}
-
-                        {/* Addon Categories */}
-                        {organizedAddOn.length > 0 && (
-                            <View style={styles.section}>
-                                <CustomText fontFamily={theme.fonts.SemiBold} fontSize={theme.fontSize.medium} color={theme.colors.text} style={styles.sectionTitle}>
-                                    Select Add-Ons
-                                </CustomText>
-                                {organizedAddOn.map((cat, catIdx) => (
-                                    <View key={cat.title}>
-                                        <View style={styles.catHeaderRow}>
-                                            <CustomText fontFamily={theme.fonts.Medium} fontSize={theme.fontSize.medium} color={theme.colors.text}>
-                                                {cat.title}
-                                            </CustomText>
-                                            {(cat.min > 0 || cat.max > 0) && (
-                                                <View style={styles.minMaxBadge}>
-                                                    <CustomText fontSize={theme.fontSize.small} color={theme.colors.theme} fontFamily={theme.fonts.Medium}>
-                                                        {cat.min > 0 && cat.max > 0 ? `Min ${cat.min} · Max ${cat.max}` : cat.min > 0 ? `Min ${cat.min} required` : `Max ${cat.max}`}
-                                                    </CustomText>
-                                                    {cat.min > 0 && <CustomText fontSize={theme.fontSize.small} color="#E53935"> *</CustomText>}
-                                                </View>
-                                            )}
-                                        </View>
-                                        <FlatList
-                                            data={cat.data}
-                                            scrollEnabled={false}
-                                            keyExtractor={(_, i) => i.toString()}
-                                            renderItem={({ item: addon }) => {
-                                                const found = selectedAddons.find((a) => a.addonId === addon.addonId);
-                                                const addonQty = found ? Math.round(found.quantity / quantity) : 0;
-                                                return (
-                                                    <View style={styles.addonRow}>
-                                                        <CustomText
-                                                            fontFamily={addonQty > 0 ? theme.fonts.SemiBold : theme.fonts.Regular}
-                                                            fontSize={theme.fontSize.medium}
-                                                            color={theme.colors.text}
-                                                            style={{ flex: 1 }}
-                                                        >
-                                                            {addon.addon}
-                                                        </CustomText>
-                                                        <View style={styles.addonCounter}>
-                                                            <TouchableOpacity
-                                                                style={[styles.addonBtn, addonQty === 0 && styles.addonBtnDisabled]}
-                                                                onPress={() => handleAddonChange(addon, -1, catIdx)}
-                                                                disabled={addonQty === 0}
-                                                            >
-                                                                <Ionicons name="remove" size={16} color={addonQty === 0 ? '#ccc' : theme.colors.white} />
-                                                            </TouchableOpacity>
-                                                            <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.medium} color={theme.colors.text} style={{ width: 28, textAlign: 'center' }}>
-                                                                {addonQty}
-                                                            </CustomText>
-                                                            <TouchableOpacity style={styles.addonBtn} onPress={() => handleAddonChange(addon, 1, catIdx)}>
-                                                                <Ionicons name="add" size={16} color={theme.colors.white} />
-                                                            </TouchableOpacity>
-                                                        </View>
-                                                        <CustomText fontFamily={theme.fonts.Medium} fontSize={theme.fontSize.medium} color={theme.colors.grayDark} style={{ width: 70, textAlign: 'right' }}>
-                                                            ₹{addon.price}
-                                                        </CustomText>
-                                                    </View>
-                                                );
-                                            }}
-                                        />
-                                    </View>
-                                ))}
-                            </View>
-                        )}
-
-                        {/* Special Instructions */}
-                        <View style={styles.section}>
-                            <CustomText fontFamily={theme.fonts.SemiBold} fontSize={theme.fontSize.medium} color={theme.colors.text} style={styles.sectionTitle}>
-                                Special Instructions <CustomText fontSize={theme.fontSize.small} color={theme.colors.grayDark}>(optional)</CustomText>
-                            </CustomText>
-                            <TextInput
-                                style={styles.instructionInput}
-                                placeholder="e.g. Extra spicy, no onions..."
-                                placeholderTextColor={theme.colors.grayDark}
-                                value={instructions}
-                                onChangeText={setInstructions}
-                                multiline
-                                numberOfLines={2}
-                            />
                         </View>
+                        <View style={{ height: 40 }} />
                     </ScrollView>
 
                     {/* Footer */}
-                    <View style={styles.footer}>
-                        {/* Item Qty Counter */}
-                        <View style={styles.itemQtyControl}>
-                            <TouchableOpacity style={styles.qtyBtn} onPress={() => handleItemQty(-1)}>
-                                <Ionicons name="remove" size={20} color={theme.colors.white} />
+                    <View style={styles.footerModern}>
+                        <View style={styles.qtyControlModern}>
+                            <TouchableOpacity style={styles.qtyBtnModern} onPress={() => handleItemQty(-1)}>
+                                <Ionicons name="remove" size={20} color="#D13C25" />
                             </TouchableOpacity>
-                            <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.large} color={theme.colors.black} style={{ width: 40, textAlign: 'center' }}>
+                            <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.large} color="#162640" style={{ width: 40, textAlign: 'center' }}>
                                 {quantity}
                             </CustomText>
-                            <TouchableOpacity style={styles.qtyBtn} onPress={() => handleItemQty(1)}>
-                                <Ionicons name="add" size={20} color={theme.colors.white} />
+                            <TouchableOpacity style={styles.qtyBtnModern} onPress={() => handleItemQty(1)}>
+                                <Ionicons name="add" size={20} color="#D13C25" />
                             </TouchableOpacity>
                         </View>
 
-                        {/* Add Button */}
-                        <TouchableOpacity style={{ flex: 1, marginLeft: theme.spacing.md }} onPress={handleAddToCart} activeOpacity={0.85}>
-                            <LinearGradient colors={['#DD7E33', '#D95C20']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.addButton}>
-                                <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.large} color={theme.colors.white}>
-                                    Add  ·  ₹{totalPrice.toFixed(0)}
-                                </CustomText>
-                            </LinearGradient>
+                        <View style={styles.totalInfoModern}>
+                            <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.xsmall} color="#E53935">TOTAL AMOUNT</CustomText>
+                            <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.headingXX} color="#162640">₹{totalPrice.toFixed(1)}</CustomText>
+                        </View>
+
+                        <TouchableOpacity style={styles.addToCartBtnModern} onPress={handleAddToCart} activeOpacity={0.85}>
+                            <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.large} color="#fff">
+                                Add to Cart
+                            </CustomText>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -347,178 +344,200 @@ export const AddOnPortionModal: React.FC<AddOnPortionModalProps> = ({ visible, i
 const styles = StyleSheet.create({
     overlay: {
         flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.6)',
-        justifyContent: 'flex-end',
+        backgroundColor: 'rgba(0,0,0,0.65)',
+        justifyContent: 'center',
         alignItems: 'center',
-        zIndex: 9999,
+        padding: theme.spacing.md,
     },
     container: {
         width: '100%',
-        maxWidth: 600,
+        maxWidth: 800,
         backgroundColor: '#FFFFFF',
-        borderTopLeftRadius: 30,
-        borderTopRightRadius: 30,
-        maxHeight: '90%',
-        minHeight: 400,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: -10 },
-        shadowOpacity: 0.15,
-        shadowRadius: 20,
-        elevation: 20,
+        borderRadius: 40,
+        maxHeight: '92%',
         overflow: 'hidden',
+        elevation: 25,
     },
     header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: theme.spacing.lg,
-        paddingVertical: theme.spacing.md,
-        borderBottomWidth: 1,
-        borderBottomColor: '#F0F0F0',
-        backgroundColor: theme.colors.white,
-        borderTopLeftRadius: theme.border.xl,
-        borderTopRightRadius: theme.border.xl,
+        padding: 30,
+        backgroundColor: '#fff',
     },
-    headerLeft: {
+    headerRow: {
         flexDirection: 'row',
+        position: 'relative',
+    },
+    imageBox: {
+        width: 140,
+        height: 140,
+        borderRadius: 24,
         alignItems: 'center',
-        gap: theme.spacing.sm,
+        justifyContent: 'center',
+        marginRight: 25,
+    },
+    headerInfo: {
         flex: 1,
-        marginRight: theme.spacing.sm,
+        paddingTop: 5,
     },
-    vegDot: {
-        width: 12,
-        height: 12,
-        borderRadius: 6,
+    priceRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
     },
-    closeBtn: {
-        padding: theme.spacing.sm,
-        borderRadius: theme.border.full,
-        backgroundColor: '#F3F4F6',
+    vegSquare: {
+        width: 18,
+        height: 18,
+        borderWidth: 1.5,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: 4,
+    },
+    vegCircle: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+    },
+    closeIcon: {
+        position: 'absolute',
+        top: -10,
+        right: -10,
+        padding: 8,
     },
     body: {
         flex: 1,
-        paddingHorizontal: theme.spacing.md,
-        paddingTop: theme.spacing.md,
+        paddingHorizontal: 30,
     },
     section: {
-        backgroundColor: theme.colors.white,
-        borderRadius: theme.border.md,
-        padding: theme.spacing.md,
-        marginBottom: theme.spacing.md,
+        marginBottom: 30,
+    },
+    portionWrapper: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 12,
+    },
+    portionCard: {
+        flex: 1,
+        minWidth: '30%',
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 16,
+        borderRadius: 16,
+        borderWidth: 1.5,
+        borderColor: '#E5E7EB',
+        backgroundColor: '#fff',
+    },
+    portionCardActive: {
+        borderColor: '#E53935',
+        backgroundColor: '#FFF5F5',
+    },
+    radioCircle: {
+        width: 20,
+        height: 20,
+        borderRadius: 10,
+        borderWidth: 2,
+        borderColor: '#D1D5DB',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    radioCircleActive: {
+        borderColor: '#E53935',
+    },
+    radioDot: {
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+        backgroundColor: '#E53935',
+    },
+    addonGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 12,
+    },
+    addonCard: {
+        width: '48.5%',
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 16,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: '#F3F4F6',
+        backgroundColor: '#fff',
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 5,
-        elevation: 2,
+        shadowOpacity: 0.02,
+        shadowRadius: 4,
+        elevation: 1,
     },
-    sectionTitle: {
-        paddingBottom: theme.spacing.sm,
+    checkbox: {
+        width: 20,
+        height: 20,
+        borderRadius: 6,
+        borderWidth: 2,
+        borderColor: '#D1D5DB',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    checkboxActive: {
+        borderColor: '#E53935',
+        backgroundColor: '#E53935',
+    },
+    instructionSection: {
+        marginBottom: 30,
         borderBottomWidth: 1,
         borderBottomColor: '#F0F0F0',
-        marginBottom: theme.spacing.sm,
+        paddingBottom: 10,
     },
-    portionRow: {
+    instructionHeader: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: theme.spacing.sm,
-        gap: theme.spacing.md,
+        gap: 10,
     },
-    radioOuter: {
-        width: 22,
-        height: 22,
-        borderRadius: 11,
-        borderWidth: 2,
-        borderColor: '#CCC',
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    radioOuterSelected: {
-        borderColor: theme.colors.theme,
-    },
-    radioInner: {
-        width: 12,
-        height: 12,
-        borderRadius: 6,
-        backgroundColor: theme.colors.theme,
-    },
-    catHeaderRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginTop: theme.spacing.sm,
-        marginBottom: theme.spacing.xs,
-    },
-    minMaxBadge: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: theme.colors.theme_light2,
-        paddingHorizontal: theme.spacing.sm,
-        paddingVertical: 2,
-        borderRadius: theme.border.full,
-    },
-    addonRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingVertical: theme.spacing.sm,
-        borderBottomWidth: 1,
-        borderBottomColor: '#F5F5F5',
-    },
-    addonCounter: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginRight: theme.spacing.sm,
-    },
-    addonBtn: {
-        width: 30,
-        height: 30,
-        borderRadius: 15,
-        backgroundColor: theme.colors.theme,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    addonBtnDisabled: {
-        backgroundColor: '#E5E7EB',
-    },
-    instructionInput: {
-        borderWidth: 1,
-        borderColor: '#E5E7EB',
-        borderRadius: theme.border.sm,
-        padding: theme.spacing.md,
+    instructionInputModern: {
+        flex: 1,
+        fontFamily: theme.fonts.Medium,
         fontSize: theme.fontSize.medium,
-        color: theme.colors.text,
-        minHeight: 70,
-        textAlignVertical: 'top',
-        fontFamily: theme.fonts.Regular,
+        color: '#162640',
+        paddingVertical: 10,
     },
-    footer: {
+    footerModern: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: theme.spacing.lg,
-        paddingVertical: theme.spacing.md,
+        padding: 25,
+        backgroundColor: '#FFF8F8', // Light pinkish footer
         borderTopWidth: 1,
-        borderTopColor: '#F0F0F0',
-        backgroundColor: theme.colors.white,
+        borderTopColor: '#FFE5E5',
     },
-    itemQtyControl: {
+    qtyControlModern: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#F3F6FB',
-        borderRadius: theme.border.sm,
-        overflow: 'hidden',
-        height: 52,
+        backgroundColor: '#fff',
+        borderRadius: 16,
+        padding: 6,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.05,
+        shadowRadius: 10,
+        elevation: 3,
     },
-    qtyBtn: {
+    qtyBtnModern: {
         width: 44,
-        height: '100%',
-        backgroundColor: theme.colors.theme,
+        height: 44,
         alignItems: 'center',
         justifyContent: 'center',
+        borderRadius: 12,
     },
-    addButton: {
-        borderRadius: theme.border.md,
-        height: 52,
-        alignItems: 'center',
-        justifyContent: 'center',
+    totalInfoModern: {
+        flex: 1,
+        marginLeft: 25,
+    },
+    addToCartBtnModern: {
+        backgroundColor: '#E53935',
+        paddingHorizontal: 35,
+        paddingVertical: 18,
+        borderRadius: 18,
+        shadowColor: "#E53935",
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.3,
+        shadowRadius: 15,
+        elevation: 8,
     },
 });

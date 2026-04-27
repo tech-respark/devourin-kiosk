@@ -5,6 +5,7 @@ const getHeaders = (options: RequestInit = {}) => {
     const state = store.getState();
     return {
         "app": state.user.dbName ?? '',
+        "br": state.user.branchId ?? '',
         ...(options.headers || {}),
     }
 };
