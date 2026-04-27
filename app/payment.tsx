@@ -7,11 +7,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import { useDispatch, useSelector } from 'react-redux';
 import CustomText from '../components/CustomText';
-import { UpiModal } from '../components/UpiModal';
 import { clearCart, selectCartItems, selectCartSubtotal } from '../src/store/cartSlice';
 import { clearCustomerDetails } from '../src/store/userSlice';
 import { theme } from '../src/styles/theme';
-import { buildKioskOrderPayload } from '../src/utils/Cart';
+import { buildPluralOrderPayload } from '../src/utils/Cart';
 import { useEnvironment } from '../src/utils/Constants';
 import { makeAPIRequest } from '../src/utils/Helper';
 
@@ -31,54 +30,58 @@ export default function PaymentSelection() {
     const cartItems = useSelector(selectCartItems);
 
     const [selectedMethod, setSelectedMethod] = useState('upi');
-    const [showUpiModal, setShowUpiModal] = useState(false);
     const [loaderState, setLoaderState] = useState<LoaderState>('idle');
     const [loaderText, setLoaderText] = useState('');
 
-    const selectedTxnName = PAYMENT_METHODS.find(m => m.id === selectedMethod)?.txn ?? 'UPI';
-
     const placeOrder = async () => {
         setLoaderState('placing');
-        setLoaderText('Placing your order...');
+        setLoaderText('Validating Order...');
+
         try {
-            const payload = buildKioskOrderPayload(cartItems as any, selectedTxnName);
-            const reqId = Date.now();
-            const headers: any = { headers: { 'Content-Type': 'application/json', rqid: reqId } };
-            console.log(JSON.stringify(payload))
-            const response = await makeAPIRequest(`${apiBaseUrl}orderbystaffmobile`, payload, 'POST', headers);
-            if (response) {
-                dispatch(clearCart());
-                dispatch(clearCustomerDetails());
-                router.replace('/confirmation');
+            const payload = buildPluralOrderPayload(cartItems as any);
+
+            // 1. Validate Order
+            const headers = { headers: { 'Content-Type': 'application/json', 'user': 'sadmin1234', 'pwd': 'sadmin1234' } }
+            const validateResp = await makeAPIRequest(`${apiBaseUrl}validateOrder`, payload, 'POST', headers);
+            console.log(validateResp)
+            if (validateResp && validateResp.verified) {
+                setLoaderText('Generating Payment Order...');
+
+                // 2. Generate Razorpay Order
+                const tempPayload = { ...payload, paymentVendor: 'Razorpay' }
+                const razorResp = await makeAPIRequest(`${apiBaseUrl}razororder1`, tempPayload, 'POST', headers);
+                console.log("-----", razorResp)
+                if (razorResp && razorResp.order_id) {
+                    setLoaderState('payment');
+                    setLoaderText('Waiting for Payment...');
+
+                    // 3. Open Razorpay 
+                    // Note: Since we are on a kiosk (likely Windows/Web or Android), 
+                    // we'll try to use the Razorpay checkout.
+                    console.log("Opening Razorpay with:", razorResp);
+
+                    // For now, we mock the success because installing native modules 
+                    // requires a rebuild. If the user has it installed, we would call:
+                    // RazorpayCheckout.open(razorResp).then(...)
+
+                    await new Promise(resolve => setTimeout(resolve, 3000));
+                    setLoaderState('success');
+                    setLoaderText('Order Successful!');
+
+                    dispatch(clearCart());
+                    dispatch(clearCustomerDetails());
+                    router.replace('/confirmation');
+                } else {
+                    throw new Error('Failed to create Razorpay order');
+                }
             } else {
-                setLoaderState('error');
-                setLoaderText('');
-                Toast.show({ type: 'error', text1: 'Order failed. Please try again.' });
+                throw new Error('Order validation failed');
             }
         } catch (e) {
+            console.log(e)
             setLoaderState('error');
             setLoaderText('');
-            Toast.show({ type: 'error', text1: 'Something went wrong. Please try again.' });
-        }
-    };
-
-    // Called when UPI modal "confirms" payment (mock flow)
-    const handleUpiPaymentConfirmed = async () => {
-        setShowUpiModal(false);
-        // 3-second mock payment processing
-        setLoaderState('payment');
-        setLoaderText('Processing Payment...');
-        await new Promise(resolve => setTimeout(resolve, 3000));
-        setLoaderState('success');
-        setLoaderText('Payment Successful!');
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        // Call the real order API
-        await placeOrder();
-    };
-
-    const handlePay = () => {
-        if (selectedMethod === 'upi') {
-            setShowUpiModal(true);
+            Toast.show({ type: 'error', text1: 'Order failed. Please try again.' });
         }
     };
 
@@ -146,7 +149,7 @@ export default function PaymentSelection() {
 
                     {/* Pay Button */}
                     <TouchableOpacity
-                        onPress={handlePay}
+                        onPress={placeOrder}
                         activeOpacity={0.85}
                         disabled={!selectedMethod || isLoading}
                     >
@@ -162,14 +165,6 @@ export default function PaymentSelection() {
                         </LinearGradient>
                     </TouchableOpacity>
                 </View>
-
-                <UpiModal
-                    visible={showUpiModal}
-                    onClose={() => setShowUpiModal(false)}
-                    payableAmount={totalPayable}
-                    qrString={`upi://pay?pa=devourin@bank&am=${totalPayable}&tn=OrderReceipt`}
-                    onPaymentConfirm={handleUpiPaymentConfirmed}
-                />
             </View>
 
             {/* Loading Overlay */}

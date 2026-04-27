@@ -206,3 +206,141 @@ export const buildKioskOrderPayload = (
 
     return payload;
 };
+
+/**
+ * Builds the payload for Plural/validateOrder and razororder1
+ * Matches the user-provided structure precisely.
+ */
+export const buildPluralOrderPayload = (
+    cartItems: CartItem[]
+) => {
+    const state = store.getState();
+    const branchId = state.user.branchId;
+    const customerDetails = state.user.customerDetails;
+    const uniqueId = new Date().getTime().toString();
+
+    // Calculate subtotal and total
+    const subTotal = cartItems.reduce((acc, item) => {
+        const addOnTotal = (item.addOns || []).reduce((a, addon) => a + addon.price * addon.quantity, 0);
+        return acc + (item.price * item.quantity) + addOnTotal;
+    }, 0);
+
+    // For now total = subtotal (can add tax logic if needed, but following example)
+    const total = subTotal;
+
+    const orderITems = cartItems.map(item => {
+        const itemPrice = item.price;
+        const itemQty = item.quantity;
+        const addOnTotal = (item.addOns || []).reduce((a, ad) => a + ad.price * ad.quantity, 0);
+
+        // Calculate Gst for this item
+        const taxRate = (item.cgst || 0) + (item.sgst || 0) + (item.igst || 0) + (item.vat || 0);
+        const itemTax = ((itemPrice * itemQty) + addOnTotal) * (taxRate / 100);
+
+        return {
+            id: null,
+            orderId: null,
+            itemId: item.itemId,
+            quantity: itemQty,
+            attributeId: item.customAttributeId || 0,
+            price: itemPrice,
+            kotNo: "",
+            served: 0,
+            printed: 0,
+            deleted: 0,
+            accepted: 1,
+            addedOn: "",
+            modifiedOn: "",
+            itemReduced: 0,
+            addons: (item.addOns || []).map(a => ({
+                id: null,
+                addonId: a.addonId,
+                name: a.addon,
+                price: a.price,
+                quantity: a.quantity,
+                cgst: a.cgst || 0,
+                sgst: a.sgst || 0,
+            })),
+            complimentary: 0,
+            isModified: 0,
+            eta: 0,
+            kg: 0,
+            gms: 0,
+            discount: 0,
+            pc: 0,
+            sc: item.sc || 0,
+            dc: 0,
+            attributeName: item.attributeName || "null",
+            it: item.isVeg ? 1 : 2,
+            available: 1,
+            section: "Food",
+            categoryId: item.categoryId,
+            discounted: 1,
+            name: item.name,
+            customizable: 0,
+            imagePath: null,
+            cTag: null,
+            availableBetween: "10:00-23:00",
+            cgst: item.cgst || 0,
+            sgst: item.sgst || 0,
+            surCharge: 0,
+            vat: item.vat || 0,
+            unit: "Qty",
+            itemTotal: itemPrice * itemQty,
+            itemTax: Number(itemTax.toFixed(2)),
+            addonTotal: addOnTotal
+        };
+    });
+
+    const totalWithTax = orderITems.reduce((acc, it) => acc + it.itemTotal + it.addonTotal + it.itemTax, 0);
+
+    return {
+        branchId: Number(branchId),
+        eta: 0,
+        rating: 0,
+        instruction: "",
+        subTotal,
+        total: Number(totalWithTax.toFixed(2)),
+        tableNo: 0,
+        thirdPartyId: 0,
+        currentStatus: {
+            id: null,
+            orderId: null,
+            status: "ORDER_PLACED",
+            statusTime: "",
+            remark: null,
+            staffId: null
+        },
+        source: "Website",
+        orderITems,
+        couponIds: null,
+        availedCoupons: null,
+        packagingCharges: 0,
+        deliveryCharges: 0,
+        serviceCharges: 0,
+        orderType: "Web_Takeaway",
+        pdTime: null,
+        address: {
+            addressId: uniqueId,
+            line1: "Kiosk Mode",
+            area: "Mumbai",
+            line2: "Counter Sales",
+            city: "Mumbai",
+            state: "Maharashtra",
+            country: "India",
+            pinCode: "400001",
+            type: "BRANCH",
+            typeId: branchId,
+            addressType: "ORDER",
+            longitude: 0,
+            lattitude: 0
+        },
+        longitude: 0,
+        lattitude: 0,
+        loyaltyId: null,
+        redeemRs: null,
+        orderPayments: [{ txn: "Loyalty", amount: null }],
+        uniqueIdentifier: uniqueId,
+        userId: "177729094306261586"
+    };
+};
