@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { Modal, StyleSheet, TouchableOpacity, View } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
@@ -14,53 +15,71 @@ interface UpiModalProps {
 export const UpiModal: React.FC<UpiModalProps> = ({ visible, onClose, payableAmount, qrString }) => {
     return (
         <Modal
-            animationType="fade"
+            animationType="slide"
             transparent={true}
             visible={visible}
             onRequestClose={onClose}
         >
             <View style={styles.overlay}>
                 <View style={styles.modalContent}>
-                    {/* Close Button Row */}
-                    <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
-                        <CustomText style={styles.closeBtnText}>✕</CustomText>
+                    {/* Status Header */}
+                    <View style={styles.statusHeader}>
+                        <Ionicons name="time-outline" size={20} color="#666" />
+                        <CustomText fontFamily={theme.fonts.Medium} fontSize={theme.fontSize.small} color="#666">
+                            Waiting for payment...
+                        </CustomText>
+                        <TouchableOpacity style={styles.closeIcon} onPress={onClose}>
+                            <Ionicons name="close" size={24} color="#333" />
+                        </TouchableOpacity>
+                    </View>
+
+                    {/* QR Branding & Amount */}
+                    <View style={styles.brandingContainer}>
+                        <View style={styles.upiRow}>
+                            <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.heading} style={styles.upiText}>UPI</CustomText>
+                            <View style={styles.dividerDot} />
+                            <CustomText fontFamily={theme.fonts.SemiBold} fontSize={theme.fontSize.small} color="#005A9C">BHIM</CustomText>
+                        </View>
+                        
+                        <View style={styles.amountBox}>
+                            <CustomText fontFamily={theme.fonts.Medium} fontSize={theme.fontSize.small} color="#666">
+                                Total Amount
+                            </CustomText>
+                            <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.headingXXX} color="#162640">
+                                ₹{payableAmount.toFixed(1)}
+                            </CustomText>
+                        </View>
+                    </View>
+
+                    {/* QR Code Container */}
+                    <View style={styles.qrOuterWrapper}>
+                        <View style={styles.qrInner}>
+                            <QRCode
+                                value={qrString || "skip-logic"}
+                                size={220}
+                                color="#000"
+                                backgroundColor="#FFF"
+                                quietZone={10}
+                            />
+                        </View>
+                        <View style={styles.qrFooter}>
+                            <Ionicons name="scan-outline" size={20} color="#D13C25" />
+                            <CustomText fontFamily={theme.fonts.SemiBold} fontSize={theme.fontSize.small} color="#D13C25">
+                                Scan QR code with any UPI App
+                            </CustomText>
+                        </View>
+                    </View>
+
+                    {/* Status Button / Footer */}
+                    <TouchableOpacity activeOpacity={0.8} style={styles.checkStatusBtn}>
+                        <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.medium} color="#fff">
+                            Check Payment Status
+                        </CustomText>
                     </TouchableOpacity>
 
-                    {/* Header */}
-                    <View style={styles.header}>
-                        <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.headingXXX} style={styles.upiLogoText}>UPI</CustomText>
-                        <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.xsmall} color={theme.colors.grayDark} style={styles.upiSubText}>
-                            UNIFIED PAYMENTS INTERFACE
-                        </CustomText>
-                    </View>
-
-                    {/* Amount */}
-                    <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.small} color={theme.colors.grayDark} style={styles.amountLabel}>
-                        Total Payable Amount
-                    </CustomText>
-                    <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.headingXXX} color={theme.colors.default} style={styles.amountValue}>
-                        ₹{payableAmount.toFixed(1)}
-                    </CustomText>
-
-                    {/* Instruction */}
-                    <CustomText fontFamily={theme.fonts.SemiBold} fontSize={theme.fontSize.medium} color={theme.colors.text} style={styles.instructionText}>
-                        Scan to make payment and finish order
-                    </CustomText>
-
-                    {/* QR Code */}
-                    <View style={styles.qrContainer}>
-                        <QRCode
-                            value={qrString || "dummy-qr-data"}
-                            size={200}
-                            color="black"
-                            backgroundColor="white"
-                        />
-                    </View>
-
-                    {/* Action Button */}
-                    <TouchableOpacity activeOpacity={0.7} style={styles.statusBtn}>
-                        <CustomText fontFamily={theme.fonts.SemiBold} fontSize={theme.fontSize.medium} color={theme.colors.text}>
-                            Check Payment Status
+                    <TouchableOpacity onPress={onClose} style={styles.cancelLink}>
+                        <CustomText fontFamily={theme.fonts.Medium} fontSize={theme.fontSize.small} color="#999">
+                            Cancel Transaction
                         </CustomText>
                     </TouchableOpacity>
                 </View>
@@ -72,77 +91,94 @@ export const UpiModal: React.FC<UpiModalProps> = ({ visible, onClose, payableAmo
 const styles = StyleSheet.create({
     overlay: {
         flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.4)',
+        backgroundColor: 'rgba(0,0,0,0.6)',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: theme.spacing.lg,
     },
     modalContent: {
         width: '100%',
-        maxWidth: 450,
-        backgroundColor: theme.colors.white,
-        borderRadius: theme.border.xxxl,
+        maxWidth: 500,
+        backgroundColor: '#fff',
+        borderRadius: 35,
         padding: theme.spacing.xl,
         alignItems: 'center',
         shadowColor: "#000",
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.1,
-        shadowRadius: 20,
-        elevation: 10,
+        shadowOffset: { width: 0, height: 20 },
+        shadowOpacity: 0.2,
+        shadowRadius: 40,
+        elevation: 15,
     },
-    closeBtn: {
-        position: 'absolute',
-        top: theme.spacing.lg,
-        right: theme.spacing.lg,
-        padding: theme.spacing.xs,
-    },
-    closeBtnText: {
-        fontSize: 22,
-        color: theme.colors.grayDark,
-    },
-    header: {
+    statusHeader: {
+        flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: theme.spacing.lg,
-    },
-    upiLogoText: {
-        fontStyle: 'italic',
-        color: '#005a9c', // Standard UPI blue tone
-        letterSpacing: 2,
-    },
-    upiSubText: {
-        marginTop: theme.spacing.xs,
-        letterSpacing: 1,
-    },
-    amountLabel: {
-        marginBottom: theme.spacing.xs,
-    },
-    amountValue: {
-        marginBottom: theme.spacing.lg,
-    },
-    instructionText: {
-        marginBottom: theme.spacing.lg,
-        textAlign: 'center',
-    },
-    qrContainer: {
-        padding: theme.spacing.md,
-        backgroundColor: theme.colors.white,
-        borderRadius: theme.border.lg,
-        borderWidth: 1,
-        borderColor: '#F0F0F0',
+        width: '100%',
+        gap: 10,
         marginBottom: theme.spacing.xl,
+        position: 'relative',
+    },
+    closeIcon: {
+        position: 'absolute',
+        right: 0,
+        padding: 5,
+    },
+    brandingContainer: {
+        alignItems: 'center',
+        marginBottom: theme.spacing.xl,
+    },
+    upiRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: theme.spacing.sm,
+    },
+    upiText: {
+        fontStyle: 'italic',
+        letterSpacing: 1.5,
+        color: '#005A9C',
+    },
+    dividerDot: {
+        width: 4,
+        height: 4,
+        borderRadius: 2,
+        backgroundColor: '#CCC',
+        marginHorizontal: 10,
+    },
+    amountBox: {
+        alignItems: 'center',
+    },
+    qrOuterWrapper: {
+        backgroundColor: '#F8F9FB',
+        borderRadius: 30,
+        padding: theme.spacing.xl,
+        alignItems: 'center',
+        width: '100%',
+        marginBottom: theme.spacing.xl,
+    },
+    qrInner: {
+        backgroundColor: '#fff',
+        padding: 15,
+        borderRadius: 20,
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.05,
         shadowRadius: 10,
         elevation: 2,
     },
-    statusBtn: {
-        borderWidth: 1.5,
-        borderColor: theme.colors.lightGray1,
-        paddingVertical: theme.spacing.md,
-        paddingHorizontal: theme.spacing.lg,
-        borderRadius: theme.border.md,
-        width: '100%',
+    qrFooter: {
+        flexDirection: 'row',
         alignItems: 'center',
+        marginTop: 20,
+        gap: 8,
+    },
+    checkStatusBtn: {
+        width: '100%',
+        height: 65,
+        backgroundColor: '#D13C25',
+        borderRadius: 18,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: theme.spacing.md,
+    },
+    cancelLink: {
+        padding: theme.spacing.xs,
     }
 });

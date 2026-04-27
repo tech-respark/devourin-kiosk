@@ -1,4 +1,5 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, StyleSheet, View } from 'react-native';
@@ -71,30 +72,41 @@ export default function ModeSelectionScreen() {
                         </CustomText>
                     </View>
 
-                    {/* Options Cards */}
                     <View style={styles.optionsContainer}>
                         <Pressable
-                            style={styles.modeButton}
                             onPress={() => handleSelectMode('Dinein')}
                         >
-                            <View style={styles.iconWrapper}>
-                                <MaterialCommunityIcons name="silverware-fork-knife" size={120} color="#fff" />
-                            </View>
-                            <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.headingXX} color="#fff">
-                                Dine-In
-                            </CustomText>
+                            <LinearGradient
+                                colors={['#DD7E33', '#D95C20']}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 0 }}
+                                style={styles.modeButton}
+                            >
+                                <View style={styles.iconWrapper}>
+                                    <MaterialCommunityIcons name="silverware-fork-knife" size={100} color="#fff" />
+                                </View>
+                                <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.headingXX} color="#fff">
+                                    Dine-In
+                                </CustomText>
+                            </LinearGradient>
                         </Pressable>
 
                         <Pressable
-                            style={styles.modeButton}
                             onPress={() => handleSelectMode('Takeaway')}
                         >
-                            <View style={styles.iconWrapper}>
-                                <Ionicons name="bag-handle" size={120} color="#fff" />
-                            </View>
-                            <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.headingXX} color="#fff">
-                                Takeaway
-                            </CustomText>
+                            <LinearGradient
+                                colors={['#DD7E33', '#D95C20']}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 0 }}
+                                style={styles.modeButton}
+                            >
+                                <View style={styles.iconWrapper}>
+                                    <Ionicons name="bag-handle" size={100} color="#fff" />
+                                </View>
+                                <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.headingXX} color="#fff">
+                                    Takeaway
+                                </CustomText>
+                            </LinearGradient>
                         </Pressable>
                     </View>
                 </View>
@@ -184,7 +196,7 @@ const styles = StyleSheet.create({
     modeButton: {
         width: 280,
         height: 380,
-        backgroundColor: '#D13C25',
+        backgroundColor: theme.colors.theme,
         borderRadius: 25,
         justifyContent: 'center',
         alignItems: 'center',

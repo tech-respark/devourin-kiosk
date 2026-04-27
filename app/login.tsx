@@ -1,4 +1,5 @@
 import { IP_ADDRESS } from '@/constants/Constants';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { ActivityIndicator, Image, KeyboardAvoidingView, Platform, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
@@ -97,14 +98,21 @@ export default function LoginScreen() {
                         />
                     </View>
 
-                    <TouchableOpacity style={styles.loginBtn} onPress={handleLoginPress} disabled={loading}>
-                        {loading ? (
-                            <ActivityIndicator color={theme.colors.white} />
-                        ) : (
-                            <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.large} color={theme.colors.white}>
-                                Configure and Login
-                            </CustomText>
-                        )}
+                    <TouchableOpacity activeOpacity={0.8} onPress={handleLoginPress} disabled={loading}>
+                        <LinearGradient
+                            colors={['#DD7E33', '#D95C20']}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 0 }}
+                            style={styles.loginBtnGrad}
+                        >
+                            {loading ? (
+                                <ActivityIndicator color={theme.colors.white} />
+                            ) : (
+                                <CustomText fontFamily={theme.fonts.SemiBold} fontSize={theme.fontSize.heading} color={theme.colors.white}>
+                                    Configure and Login
+                                </CustomText>
+                            )}
+                        </LinearGradient>
                     </TouchableOpacity>
                 </View>
 
@@ -187,12 +195,8 @@ const styles = StyleSheet.create({
         maxWidth: 450,
         backgroundColor: theme.colors.white,
         padding: theme.spacing.xl,
-        borderRadius: theme.border.xxxl,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.04,
-        shadowRadius: 20,
-        elevation: 4,
+        borderRadius: theme.border.xl,
+        boxShadow: '0px 4px 8px 0px rgba(0, 0, 0, 0.2)'
     },
     title: {
         marginBottom: theme.spacing.xs,
@@ -216,17 +220,11 @@ const styles = StyleSheet.create({
         fontSize: theme.fontSize.medium,
         color: theme.colors.text,
     },
-    loginBtn: {
-        backgroundColor: theme.colors.theme,
-        padding: theme.spacing.md,
+    loginBtnGrad: {
+        paddingVertical: theme.spacing.md,
         borderRadius: theme.border.lg,
         alignItems: 'center',
-        marginTop: theme.spacing.sm,
-        shadowColor: theme.colors.theme,
-        shadowOffset: { width: 0, height: 5 },
-        shadowOpacity: 0.2,
-        shadowRadius: 10,
-        elevation: 5,
+        marginTop: theme.spacing.md,
     },
     footer: {
         marginBottom: theme.spacing.lg,

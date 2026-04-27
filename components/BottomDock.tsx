@@ -10,8 +10,9 @@ interface BottomDockProps {
     itemCount: number;
     subTotal: number;
     onCancel: () => void;
-    onProceed: () => void;
+    onProceed?: () => void;
     proceedText?: string;
+    hideProceed?: boolean;
 }
 
 export const BottomDock: React.FC<BottomDockProps> = ({
@@ -19,6 +20,7 @@ export const BottomDock: React.FC<BottomDockProps> = ({
     subTotal,
     onCancel,
     onProceed,
+    hideProceed,
     proceedText = "Proceed"
 }) => {
     return (
@@ -61,19 +63,21 @@ export const BottomDock: React.FC<BottomDockProps> = ({
                         Cancel Order
                     </CustomText>
                 </TouchableOpacity>
-                <TouchableOpacity activeOpacity={0.8} onPress={onProceed}>
-                    <LinearGradient
-                        colors={['#DD7E33', '#D95C20']}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 0 }}
-                        style={styles.proceedBtn}
-                    >
-                        <Ionicons name='checkmark-circle-outline' size={theme.fontSize.headingXX} color={theme.colors.white} />
-                        <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.large} color={theme.colors.white}>
-                            {proceedText}
-                        </CustomText>
-                    </LinearGradient>
-                </TouchableOpacity>
+                {!hideProceed && onProceed && (
+                    <TouchableOpacity activeOpacity={0.8} onPress={onProceed}>
+                        <LinearGradient
+                            colors={['#DD7E33', '#D95C20']}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 0 }}
+                            style={styles.proceedBtn}
+                        >
+                            <Ionicons name='checkmark-circle-outline' size={theme.fontSize.headingXX} color={theme.colors.white} />
+                            <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.large} color={theme.colors.white}>
+                                {proceedText}
+                            </CustomText>
+                        </LinearGradient>
+                    </TouchableOpacity>
+                )}
             </View>
         </View>
     );

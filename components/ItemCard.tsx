@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
     },
     addButton: {
         borderRadius: theme.border.sm,
-        paddingVertical: theme.spacing.md,
+        paddingVertical: 12,
         alignItems: 'center',
         justifyContent: 'center',
         width: 100,

@@ -9,6 +9,7 @@ import { BottomDock } from '../components/BottomDock';
 import CustomText from '../components/CustomText';
 import { removeFromCart, selectCartItems, selectCartSubtotal, selectGlobalInstruction, setGlobalInstruction, updateQuantity } from '../src/store/cartSlice';
 import { theme } from '../src/styles/theme';
+import { AppConfig } from '../src/utils/AppConfig';
 
 export default function MyOrderCart() {
     const dispatch = useDispatch();
@@ -130,13 +131,20 @@ export default function MyOrderCart() {
                     }
                 />
             </View>
-
             {/* Dock Component */}
             <BottomDock
                 itemCount={totalQty}
                 subTotal={subTotal}
                 onCancel={() => router.back()}
-                onProceed={() => router.push('/payment')}
+                onProceed={() => {
+                    console.log("lkhdsklhdc")
+                    if (AppConfig.CUSTOMER_DETAILS_REQUIRED) {
+                        console.log("jshshs")
+                        router.push('/customer');
+                    } else {
+                        router.push('/payment');
+                    }
+                }}
                 proceedText="Confirm"
             />
         </SafeAreaView>
