@@ -1,10 +1,35 @@
+import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
+import React, { useEffect } from 'react';
 import 'react-native-reanimated';
 import { Provider } from 'react-redux';
 import { store } from '../src/store';
 
+// Keep the splash screen visible while we fetch resources
+SplashScreen.preventAutoHideAsync();
+
 export default function RootLayout() {
+  const [loaded, error] = useFonts({
+    'Poppins-Black': require('../assets/fonts/Poppins-Black.ttf'),
+    'Poppins-Bold': require('../assets/fonts/Poppins-Bold.ttf'),
+    'Poppins-Light': require('../assets/fonts/Poppins-Light.ttf'),
+    'Poppins-Medium': require('../assets/fonts/Poppins-Medium.ttf'),
+    'Poppins-Regular': require('../assets/fonts/Poppins-Regular.ttf'),
+    'Poppins-SemiBold': require('../assets/fonts/Poppins-SemiBold.ttf'),
+  });
+
+  useEffect(() => {
+    if (loaded || error) {
+      SplashScreen.hideAsync();
+    }
+  }, [loaded, error]);
+
+  if (!loaded && !error) {
+    return null;
+  }
+
   return (
     <Provider store={store}>
       <Stack screenOptions={{ headerShown: false }}>
