@@ -1,4 +1,4 @@
-import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
@@ -28,7 +28,7 @@ const loadRazorpayScript = () => {
     return new Promise((resolve) => {
         if (typeof document === 'undefined') return resolve(false);
         if ((window as any).Razorpay) return resolve(true);
-        
+
         const script = document.createElement('script');
         script.src = 'https://checkout.razorpay.com/v1/checkout.js';
         script.onload = () => resolve(true);
@@ -52,7 +52,7 @@ export default function PaymentSelection() {
         console.log("Payment Success Handler:", data);
         setLoaderState('success');
         setLoaderText('Order Successful!');
-        
+
         // Printer list check (maintained from user's manual addition)
         try {
             const url = 'http://192.168.10.176:7009/devourin-printing/v1/listprinters';
@@ -85,15 +85,15 @@ export default function PaymentSelection() {
         try {
             const payload = buildPluralOrderPayload(cartItems as any);
             const headers = { headers: { 'Content-Type': 'application/json', 'user': 'sadmin1234', 'pwd': 'sadmin1234' } }
-            
+
             const validateResp = await makeAPIRequest(`${apiBaseUrl}validateOrder`, payload, 'POST', headers);
-            
+
             if (validateResp && validateResp.verified) {
                 setLoaderText('Generating Payment Order...');
 
                 const tempPayload = { ...payload, paymentVendor: 'Razorpay' }
                 const razorResp = await makeAPIRequest(`${apiBaseUrl}razororder1`, tempPayload, 'POST', headers);
-                
+
                 if (razorResp && razorResp.order_id) {
                     setLoaderState('payment');
                     setLoaderText('Waiting for Payment...');
@@ -167,7 +167,7 @@ export default function PaymentSelection() {
                         Select Payment Method
                     </CustomText>
 
-                    <View style={styles.methodsRow}>
+                    {/* <View style={styles.methodsRow}>
                         {PAYMENT_METHODS.map(method => {
                             const isSelected = selectedMethod === method.id;
                             const isDisabled = method.disabled;
@@ -197,7 +197,7 @@ export default function PaymentSelection() {
                                 </TouchableOpacity>
                             );
                         })}
-                    </View>
+                    </View> */}
 
                     {/* Pay Button */}
                     <TouchableOpacity
@@ -212,7 +212,7 @@ export default function PaymentSelection() {
                             style={styles.payButton}
                         >
                             <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.heading} color={theme.colors.white}>
-                                Pay ₹{totalPayable.toFixed(0)}
+                                Continue to payment
                             </CustomText>
                         </LinearGradient>
                     </TouchableOpacity>
@@ -258,7 +258,7 @@ const styles = StyleSheet.create({
         borderRadius: theme.border.md,
         gap: theme.spacing.xs,
     },
-    devourinLogo: { width: 150, height: 40 },
+    devourinLogo: { width: 200, height: 40 },
     mainContent: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: theme.spacing.lg, backgroundColor: theme.colors.background },
     paymentCard: {
         backgroundColor: '#fff',
@@ -309,6 +309,7 @@ const styles = StyleSheet.create({
         borderRadius: 20,
         alignItems: 'center',
         justifyContent: 'center',
+        marginTop: theme.spacing.xxl
     },
     loadingOverlay: {
         ...StyleSheet.absoluteFillObject,

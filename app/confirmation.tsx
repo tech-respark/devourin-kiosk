@@ -34,7 +34,7 @@ export default function ConfirmationScreen() {
             setSeconds((prev) => {
                 if (prev <= 1) {
                     clearInterval(timer);
-                    router.replace('/');
+                    router.replace('/mode');
                     return 0;
                 }
                 return prev - 1;
@@ -77,7 +77,7 @@ export default function ConfirmationScreen() {
 
                 <TouchableOpacity 
                     activeOpacity={0.8} 
-                    onPress={() => router.replace('/')} 
+                    onPress={() => router.replace('/mode')} 
                     style={styles.btnWrapper}
                 >
                     <LinearGradient 

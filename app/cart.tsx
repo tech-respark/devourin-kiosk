@@ -15,6 +15,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { BottomDock } from '../components/BottomDock';
 import CustomText from '../components/CustomText';
 import {
+    clearCart,
     removeFromCart,
     selectCartItems,
     selectCartSubtotal,
@@ -23,12 +24,14 @@ import {
 } from '../src/store/cartSlice';
 import { theme } from '../src/styles/theme';
 import { AppConfig } from '../src/utils/AppConfig';
+import { CancelOrderModal } from '../components/CancelOrderModal';
 
 export default function MyOrderCart() {
     const dispatch = useDispatch();
     const router = useRouter();
     const cartItems = useSelector(selectCartItems);
     const subTotal = useSelector(selectCartSubtotal);
+    const [showCancelModal, setShowCancelModal] = React.useState(false);
 
     const totalQty = cartItems.reduce((acc, item) => acc + item.quantity, 0);
 
@@ -39,6 +42,12 @@ export default function MyOrderCart() {
 
     const removeItem = (itemId: number) => {
         dispatch(removeFromCart(itemId));
+    };
+
+    const handleConfirmCancel = () => {
+        dispatch(clearCart());
+        setShowCancelModal(false);
+        router.replace('/mode');
     };
 
     const renderCartItem = ({ item }: { item: any }) => (
@@ -163,7 +172,7 @@ export default function MyOrderCart() {
             <BottomDock
                 itemCount={totalQty}
                 subTotal={subTotal}
-                onCancel={() => router.back()}
+                onCancel={() => setShowCancelModal(true)}
                 onProceed={() => {
                     if (AppConfig.CUSTOMER_DETAILS_REQUIRED) {
                         router.push('/customer');
@@ -172,6 +181,11 @@ export default function MyOrderCart() {
                     }
                 }}
                 proceedText="Confirm"
+            />
+            <CancelOrderModal 
+                visible={showCancelModal}
+                onClose={() => setShowCancelModal(false)}
+                onConfirm={handleConfirmCancel}
             />
         </SafeAreaView>
     );
@@ -191,7 +205,7 @@ const styles = StyleSheet.create({
         zIndex: 10,
     },
     input: {
-        fontSize: theme.fontSize.small,
+        fontSize: theme.fontSize.regular,
         borderRadius: 5,
         marginLeft: 3,
         backgroundColor: '#fff',

@@ -9,9 +9,10 @@ import { AddOnPortionModal } from '../components/AddOnPortionModal';
 import { BottomDock } from '../components/BottomDock';
 import CustomText from '../components/CustomText';
 import { ItemCard } from '../components/ItemCard';
-import { addToCart, decrementFromCart, selectCartItems, selectCartSubtotal } from '../src/store/cartSlice';
+import { addToCart, clearCart, decrementFromCart, selectCartItems, selectCartSubtotal } from '../src/store/cartSlice';
 import { selectAddOnItems, selectOrganisedMenuItems } from '../src/store/menuSlice';
 import { theme } from '../src/styles/theme';
+import { CancelOrderModal } from '../components/CancelOrderModal';
 
 export default function MenuDashboard() {
     const dispatch = useDispatch();
@@ -24,6 +25,8 @@ export default function MenuDashboard() {
     const [activeCategory, setActiveCategory] = useState<string | number | undefined>(organizedMenu[0]?.id);
     const [selectedItem, setSelectedItem] = useState<any>(null);
     const [showAddonModal, setShowAddonModal] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [showCancelModal, setShowCancelModal] = useState(false);
 
     useEffect(() => {
         if (!activeCategory && organizedMenu.length > 0) {
@@ -33,10 +36,18 @@ export default function MenuDashboard() {
 
     const currentCategory = organizedMenu.find((c: any) => c.id === activeCategory);
 
-    const itemsToDisplay = currentCategory ? [
-        ...currentCategory.items,
-        ...currentCategory.subcategories.flatMap((sc: any) => sc.items)
-    ] : [];
+    // Global Search Logic: search across ALL categories
+    const allItems = organizedMenu.flatMap((cat: any) => [
+        ...cat.items,
+        ...cat.subcategories.flatMap((sc: any) => sc.items)
+    ]);
+
+    const itemsToDisplay = searchQuery.trim() 
+        ? allItems.filter(item => item.name.toLowerCase().includes(searchQuery.toLowerCase()))
+        : (currentCategory ? [
+            ...currentCategory.items,
+            ...currentCategory.subcategories.flatMap((sc: any) => sc.items)
+        ] : []);
 
     const hasAddOnOrPortions = (item: any): boolean => {
         const hasPortions = item.portions && item.portions.length > 0;
@@ -76,6 +87,12 @@ export default function MenuDashboard() {
         setShowAddonModal(true);
     };
 
+    const handleConfirmCancel = () => {
+        dispatch(clearCart());
+        setShowCancelModal(false);
+        router.replace('/mode');
+    };
+
     return (
         <>
             <SafeAreaView style={styles.container} edges={['bottom', 'top']}>
@@ -87,7 +104,14 @@ export default function MenuDashboard() {
                             style={styles.searchInput}
                             placeholder="Search for items..."
                             placeholderTextColor={'gray'}
+                            value={searchQuery}
+                            onChangeText={setSearchQuery}
                         />
+                        {searchQuery.length > 0 && (
+                            <TouchableOpacity onPress={() => setSearchQuery('')}>
+                                <Ionicons name='close-circle' size={24} color={theme.colors.grayDark} />
+                            </TouchableOpacity>
+                        )}
                     </View>
                 </View>
 
@@ -126,7 +150,7 @@ export default function MenuDashboard() {
                     {/* Items Grid */}
                     <View style={styles.itemsSection}>
                         <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.headingX} style={styles.sectionTitle}>
-                            {currentCategory?.title}
+                            {searchQuery.trim() ? `Search Results for "${searchQuery}"` : currentCategory?.title}
                         </CustomText>
 
                         <FlatList
@@ -158,7 +182,7 @@ export default function MenuDashboard() {
                 <BottomDock
                     itemCount={cartItems.reduce((acc: any, i: any) => acc + i.quantity, 0)}
                     subTotal={cartSubtotal}
-                    onCancel={() => { router.replace('/mode') }}
+                    onCancel={() => setShowCancelModal(true)}
                     onProceed={() => router.push('/cart')}
                 />
 
@@ -168,6 +192,11 @@ export default function MenuDashboard() {
                 visible={showAddonModal}
                 item={selectedItem}
                 onClose={() => { setShowAddonModal(false); setSelectedItem(null); }}
+            />
+            <CancelOrderModal 
+                visible={showCancelModal}
+                onClose={() => setShowCancelModal(false)}
+                onConfirm={handleConfirmCancel}
             />
         </>
     );

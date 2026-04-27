@@ -18,7 +18,7 @@ export default function ModeSelectionScreen() {
     const dispatch = useDispatch();
     const organisedMenu = useSelector(selectOrganisedMenuItems);
     const { callInitialSetUpAPIAsync, loading } = useInitialDataFetch();
-    
+
     // If data already exists in redux, we don't need to show "Synchronizing" loader
     const [isConfigured, setIsConfigured] = useState(organisedMenu && organisedMenu.length > 0);
 
@@ -44,7 +44,7 @@ export default function ModeSelectionScreen() {
     const handleLogoClick = () => {
         const newCount = logoClickCount + 1;
         setLogoClickCount(newCount);
-        if (newCount >= 4) {
+        if (newCount >= 5) {
             setShowAdminModal(true);
             setLogoClickCount(0);
         }
@@ -208,9 +208,9 @@ const styles = StyleSheet.create({
         paddingHorizontal: theme.spacing.xl,
     },
     logoContainer: {
-        marginTop: theme.spacing.xl,
+        marginTop: theme.spacing.xxxl,
         width: '70%',
-        height: 180,
+        height: 250,
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -239,7 +239,7 @@ const styles = StyleSheet.create({
     },
     modeButton: {
         width: 280,
-        height: 380,
+        height: 340,
         borderRadius: 25,
         justifyContent: 'center',
         alignItems: 'center',

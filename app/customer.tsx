@@ -6,15 +6,17 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
 import { BottomDock } from '../components/BottomDock';
 import CustomText from '../components/CustomText';
-import { selectCartItems, selectCartSubtotal } from '../src/store/cartSlice';
+import { clearCart, selectCartItems, selectCartSubtotal } from '../src/store/cartSlice';
 import { setCustomerDetails } from '../src/store/userSlice';
 import { theme } from '../src/styles/theme';
+import { CancelOrderModal } from '../components/CancelOrderModal';
 
 export default function CustomerDetails() {
     const router = useRouter();
     const dispatch = useDispatch();
     const [name, setName] = useState('');
     const [mobile, setMobile] = useState('');
+    const [showCancelModal, setShowCancelModal] = useState(false);
 
     const cartItems = useSelector(selectCartItems);
     const subTotal = useSelector(selectCartSubtotal);
@@ -29,6 +31,12 @@ export default function CustomerDetails() {
 
     const handleSkip = () => {
         router.push('/payment');
+    };
+
+    const handleConfirmCancel = () => {
+        dispatch(clearCart());
+        setShowCancelModal(false);
+        router.replace('/mode');
     };
 
     return (
@@ -96,7 +104,12 @@ export default function CustomerDetails() {
                 </View>
             </View>
 
-            <BottomDock itemCount={totalQty} subTotal={subTotal} onCancel={() => router.back()} hideProceed={true} />
+            <BottomDock itemCount={totalQty} subTotal={subTotal} onCancel={() => setShowCancelModal(true)} hideProceed={true} />
+            <CancelOrderModal 
+                visible={showCancelModal}
+                onClose={() => setShowCancelModal(false)}
+                onConfirm={handleConfirmCancel}
+            />
         </SafeAreaView>
     );
 }
