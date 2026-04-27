@@ -64,9 +64,9 @@ export const BottomDock: React.FC<BottomDockProps> = ({
                     </CustomText>
                 </TouchableOpacity>
                 {!hideProceed && onProceed && (
-                    <TouchableOpacity activeOpacity={0.8} onPress={onProceed}>
+                    <TouchableOpacity activeOpacity={0.8} onPress={onProceed} disabled={itemCount === 0}>
                         <LinearGradient
-                            colors={['#DD7E33', '#D95C20']}
+                            colors={itemCount === 0 ? ['lightgray', 'lightgray'] : ['#DD7E33', '#D95C20']}
                             start={{ x: 0, y: 0 }}
                             end={{ x: 1, y: 0 }}
                             style={styles.proceedBtn}

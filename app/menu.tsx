@@ -5,11 +5,12 @@ import React, { useEffect, useState } from 'react';
 import { FlatList, Image, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
+import { AddOnPortionModal } from '../components/AddOnPortionModal';
 import { BottomDock } from '../components/BottomDock';
 import CustomText from '../components/CustomText';
 import { ItemCard } from '../components/ItemCard';
 import { addToCart, decrementFromCart, selectCartItems, selectCartSubtotal } from '../src/store/cartSlice';
-import { selectOrganisedMenuItems } from '../src/store/menuSlice';
+import { selectAddOnItems, selectOrganisedMenuItems } from '../src/store/menuSlice';
 import { theme } from '../src/styles/theme';
 
 export default function MenuDashboard() {
@@ -18,7 +19,11 @@ export default function MenuDashboard() {
     const organizedMenu = useSelector(selectOrganisedMenuItems);
     const cartItems = useSelector(selectCartItems);
     const cartSubtotal = useSelector(selectCartSubtotal);
+    const addOnItems = useSelector(selectAddOnItems);
+
     const [activeCategory, setActiveCategory] = useState<string | number | undefined>(organizedMenu[0]?.id);
+    const [selectedItem, setSelectedItem] = useState<any>(null);
+    const [showAddonModal, setShowAddonModal] = useState(false);
 
     useEffect(() => {
         if (!activeCategory && organizedMenu.length > 0) {
@@ -26,13 +31,18 @@ export default function MenuDashboard() {
         }
     }, [organizedMenu]);
 
-    const currentCategory = organizedMenu.find(c => c.id === activeCategory);
+    const currentCategory = organizedMenu.find((c: any) => c.id === activeCategory);
 
-    // Flatten all items within this parent category
     const itemsToDisplay = currentCategory ? [
         ...currentCategory.items,
         ...currentCategory.subcategories.flatMap((sc: any) => sc.items)
     ] : [];
+
+    const hasAddOnOrPortions = (item: any): boolean => {
+        const hasPortions = item.portions && item.portions.length > 0;
+        const hasAddons = addOnItems.some((a: any) => a.itemId === item.itemId);
+        return hasPortions || hasAddons;
+    };
 
     const handleAddToCart = (item: any) => {
         dispatch(addToCart({
@@ -40,8 +50,14 @@ export default function MenuDashboard() {
             categoryId: item.categoryId,
             name: item.name,
             price: item.salePrice !== 0 ? item.salePrice : item.price,
+            salePrice: item.salePrice,
             isVeg: item.it === 1,
             imageColor: item.imageColor || '#FCF1E4',
+            cgst: item.cgst || 0,
+            sgst: item.sgst || 0,
+            igst: item.igst || 0,
+            vat: item.vat || 0,
+            sc: item.sc || 0,
         }));
     };
 
@@ -50,93 +66,110 @@ export default function MenuDashboard() {
     };
 
     const getItemQuantity = (itemId: number) => {
-        const item = cartItems.find((i: any) => i.itemId === itemId);
-        return item ? item.quantity : 0;
+        return cartItems
+            .filter((i: any) => i.itemId === itemId)
+            .reduce((sum: number, i: any) => sum + i.quantity, 0);
+    };
+
+    const openModal = (item: any) => {
+        setSelectedItem(item);
+        setShowAddonModal(true);
     };
 
     return (
-        <SafeAreaView style={styles.container} edges={['bottom', 'top']}>
-            {/* Top Header */}
-            <View style={styles.header}>
-                <View style={styles.searchContainer}>
-                    <Ionicons name='search' size={theme.fontSize.heading} color={theme.colors.grayDark} />
-                    <TextInput
-                        style={styles.searchInput}
-                        placeholder="Search for items..."
-                        placeholderTextColor={'gray'}
-                    />
+        <>
+            <SafeAreaView style={styles.container} edges={['bottom', 'top']}>
+                {/* Top Header */}
+                <View style={styles.header}>
+                    <View style={styles.searchContainer}>
+                        <Ionicons name='search' size={theme.fontSize.heading} color={theme.colors.grayDark} />
+                        <TextInput
+                            style={styles.searchInput}
+                            placeholder="Search for items..."
+                            placeholderTextColor={'gray'}
+                        />
+                    </View>
                 </View>
-            </View>
 
-            <View style={styles.mainContent}>
-                {/* Left Sidebar Categories Strip */}
-                <View style={styles.categoriesSection}>
-                    <View style={styles.posBadge}>
-                        <Image source={require("../assets/icons/app_icon.png")} style={{ width: 75, height: 75 }} />
+                <View style={styles.mainContent}>
+                    {/* Left Sidebar Categories Strip */}
+                    <View style={styles.categoriesSection}>
+                        <View style={styles.posBadge}>
+                            <Image source={require("../assets/icons/app_icon.png")} style={{ width: 75, height: 75 }} />
+                        </View>
+
+                        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.categoryScroll}>
+                            {organizedMenu.map((cat: any) => {
+                                const isActive = cat.id === activeCategory;
+                                return (
+                                    <TouchableOpacity
+                                        key={cat.id}
+                                        style={[styles.categoryPill, isActive && styles.categoryPillActive]}
+                                        onPress={() => setActiveCategory(cat.id)}
+                                    >
+                                        <View style={[styles.categoryIconBg, isActive && styles.categoryIconBgActive]}>
+                                            <SimpleLineIcons name='cup' size={theme.fontSize.headingXX} color={isActive ? theme.colors.theme : 'gray'} />
+                                        </View>
+                                        <CustomText
+                                            fontFamily={theme.fonts.Medium}
+                                            fontSize={theme.fontSize.small}
+                                            style={[styles.categoryName, { color: isActive ? theme.colors.theme : theme.colors.grayDark }]}
+                                        >
+                                            {cat.title}
+                                        </CustomText>
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </ScrollView>
                     </View>
 
-                    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.categoryScroll}>
-                        {organizedMenu.map((cat: any) => {
-                            const isActive = cat.id === activeCategory;
-                            return (
-                                <TouchableOpacity
-                                    key={cat.id}
-                                    style={[styles.categoryPill, isActive && styles.categoryPillActive]}
-                                    onPress={() => setActiveCategory(cat.id)}
-                                >
-                                    <View style={[styles.categoryIconBg, isActive && styles.categoryIconBgActive]}>
-                                        <SimpleLineIcons name='cup' size={theme.fontSize.headingXX} color={isActive ? theme.colors.theme : 'gray'} />
-                                    </View>
-                                    <CustomText
-                                        fontFamily={theme.fonts.Medium}
-                                        fontSize={theme.fontSize.small}
-                                        style={[styles.categoryName, { color: isActive ? theme.colors.theme : theme.colors.grayDark }]}
-                                    >
-                                        {cat.title}
-                                    </CustomText>
-                                </TouchableOpacity>
-                            );
-                        })}
-                    </ScrollView>
+                    {/* Items Grid */}
+                    <View style={styles.itemsSection}>
+                        <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.headingX} style={styles.sectionTitle}>
+                            {currentCategory?.title}
+                        </CustomText>
+
+                        <FlatList
+                            data={itemsToDisplay}
+                            keyExtractor={(item, index) => `${item.itemId}-${index}`}
+                            numColumns={theme.device.isTablet ? 3 : 2}
+                            columnWrapperStyle={styles.row}
+                            showsVerticalScrollIndicator={false}
+                            contentContainerStyle={styles.listContent}
+                            renderItem={({ item }) => (
+                                <ItemCard
+                                    name={item.name}
+                                    price={item.salePrice !== 0 ? item.salePrice : item.price}
+                                    isVeg={item.it === 1}
+                                    imageColor={item.imageColor || '#FCF1E4'}
+                                    quantity={getItemQuantity(item.itemId)}
+                                    hasAddOnOrPortions={hasAddOnOrPortions(item)}
+                                    maxWidth={theme.device.isTablet ? '31.5%' : '48.5%'}
+                                    onAdd={() => handleAddToCart(item)}
+                                    onRemove={() => handleRemoveFromCart(item)}
+                                    onOpenModal={() => openModal(item)}
+                                />
+                            )}
+                        />
+                    </View>
                 </View>
 
-                {/* Items Grid */}
-                <View style={styles.itemsSection}>
-                    <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.headingX} style={styles.sectionTitle}>
-                        {currentCategory?.title}
-                    </CustomText>
+                {/* Bottom Dock */}
+                <BottomDock
+                    itemCount={cartItems.reduce((acc: any, i: any) => acc + i.quantity, 0)}
+                    subTotal={cartSubtotal}
+                    onCancel={() => { router.replace('/mode') }}
+                    onProceed={() => router.push('/cart')}
+                />
 
-                    <FlatList
-                        data={itemsToDisplay}
-                        keyExtractor={(item, index) => `${item.itemId}-${index}`}
-                        numColumns={theme.device.isTablet ? 3 : 2}
-                        columnWrapperStyle={styles.row}
-                        showsVerticalScrollIndicator={false}
-                        contentContainerStyle={styles.listContent}
-                        renderItem={({ item }) => (
-                            <ItemCard
-                                name={item.name}
-                                price={item.salePrice !== 0 ? item.salePrice : item.price}
-                                isVeg={item.it === 1}
-                                imageColor={item.imageColor || '#FCF1E4'}
-                                quantity={getItemQuantity(item.itemId)}
-                                maxWidth={theme.device.isTablet ? '31.5%' : '48.5%'}
-                                onAdd={() => handleAddToCart(item)}
-                                onRemove={() => handleRemoveFromCart(item)}
-                            />
-                        )}
-                    />
-                </View>
-            </View>
-
-            {/* Bottom Dock */}
-            <BottomDock
-                itemCount={cartItems.reduce((acc: any, i: any) => acc + i.quantity, 0)}
-                subTotal={cartSubtotal}
-                onCancel={() => { router.replace('/mode') }}
-                onProceed={() => router.push('/cart')}
+                {/* Addon/Portion Modal */}
+            </SafeAreaView>
+            <AddOnPortionModal
+                visible={showAddonModal}
+                item={selectedItem}
+                onClose={() => { setShowAddonModal(false); setSelectedItem(null); }}
             />
-        </SafeAreaView>
+        </>
     );
 };
 
@@ -174,29 +207,6 @@ const styles = StyleSheet.create({
         color: theme.colors.text,
         marginLeft: theme.spacing.sm,
     },
-    vegToggle: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#F3F6FB',
-        paddingHorizontal: theme.spacing.md,
-        paddingVertical: theme.spacing.sm,
-        borderRadius: theme.border.md,
-        height: 50,
-    },
-    vegSquare: {
-        width: 18,
-        height: 18,
-        borderWidth: 1.5,
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderRadius: 4,
-        marginRight: theme.spacing.sm,
-    },
-    vegCircle: {
-        width: 8,
-        height: 8,
-        borderRadius: 4,
-    },
     mainContent: {
         flex: 1,
         flexDirection: 'row',
@@ -209,7 +219,7 @@ const styles = StyleSheet.create({
         borderRightWidth: 1,
         borderRightColor: '#F0F0F0',
         position: 'absolute',
-        top: -80, // overlay over header area to match mobile kiosk design
+        top: -80,
         bottom: 0,
         left: 0,
         zIndex: 20,
@@ -232,7 +242,7 @@ const styles = StyleSheet.create({
     categoryPillActive: {
         borderColor: theme.colors.theme,
         borderWidth: 2,
-        backgroundColor: theme.colors.theme_light2
+        backgroundColor: theme.colors.theme_light2,
     },
     categoryIconBg: {
         backgroundColor: '#F3F6FB',
@@ -240,18 +250,18 @@ const styles = StyleSheet.create({
         padding: 10,
     },
     categoryIconBgActive: {
-        backgroundColor: '#FCF1E4', // theme.colors.defaultLight2
+        backgroundColor: '#FCF1E4',
     },
     categoryName: {
         textAlign: 'center',
-        marginTop: 5
+        marginTop: 5,
     },
     itemsSection: {
         flex: 1,
         paddingHorizontal: theme.spacing.md,
         paddingTop: theme.spacing.md,
         marginLeft: 110,
-        backgroundColor: theme.colors.background
+        backgroundColor: theme.colors.background,
     },
     sectionTitle: {
         color: theme.colors.text,
@@ -264,5 +274,5 @@ const styles = StyleSheet.create({
     row: {
         justifyContent: 'flex-start',
         gap: theme.spacing.lg,
-    }
+    },
 });

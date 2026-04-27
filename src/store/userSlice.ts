@@ -1,5 +1,10 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
+interface CustomerDetails {
+    name: string;
+    mobile: string;
+}
+
 interface UserState {
     ipAddress: string | null;
     dbName: string | null;
@@ -8,6 +13,7 @@ interface UserState {
     mobileSettings: any | null;
     branchConfigs: any | null;
     taxes: any | null;
+    customerDetails: CustomerDetails | null;
 }
 
 const initialState: UserState = {
@@ -18,6 +24,7 @@ const initialState: UserState = {
     mobileSettings: null,
     branchConfigs: null,
     taxes: null,
+    customerDetails: null,
 };
 
 const userSlice = createSlice({
@@ -45,6 +52,12 @@ const userSlice = createSlice({
         setTaxes: (state, action: PayloadAction<any>) => {
             state.taxes = action.payload;
         },
+        setCustomerDetails: (state, action: PayloadAction<CustomerDetails>) => {
+            state.customerDetails = action.payload;
+        },
+        clearCustomerDetails: (state) => {
+            state.customerDetails = null;
+        },
         logoutStaff: (state) => {
             state.userData = null;
         },
@@ -55,6 +68,7 @@ const userSlice = createSlice({
             state.mobileSettings = null;
             state.branchConfigs = null;
             state.taxes = null;
+            state.customerDetails = null;
         }
     },
 });
@@ -67,6 +81,8 @@ export const {
     setMobileSettings,
     setBranchConfigs,
     setTaxes,
+    setCustomerDetails,
+    clearCustomerDetails,
     logoutStaff,
     resetUser,
 } = userSlice.actions;
@@ -77,5 +93,7 @@ export const selectBranchId = (state: any) => state.user.branchId;
 export const selectUserData = (state: any) => state.user.userData;
 export const selectMobileSettings = (state: any) => state.user.mobileSettings;
 export const selectBranchConfigs = (state: any) => state.user.branchConfigs;
+export const selectTaxes = (state: any) => state.user.taxes;
+export const selectCustomerDetails = (state: any) => state.user.customerDetails;
 
 export default userSlice.reducer;

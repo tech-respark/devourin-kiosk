@@ -166,7 +166,7 @@ export const checkBranchValidity = async (apiBaseUrl: string, branchId: string |
     const url = `${apiBaseUrl}isexpired`;
     const headers: any = { headers: { 'Content-Type': "application/json", br: branchId, src: 'Kiosk' } };
     const response = await makeAPIRequest(url, null, 'POST', headers, 'Branch verification failed', false);
-    
+
     // In our simplified kiosk version, if we get a response it means it's not 401/412
     if (response) {
         return true;

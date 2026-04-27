@@ -43,6 +43,7 @@ export default function RootLayout() {
             <Stack.Screen name="cart" />
             <Stack.Screen name="customer" />
             <Stack.Screen name="payment" />
+            <Stack.Screen name="confirmation" />
         </Stack>
         <StatusBar style="dark" />
         <Toast />

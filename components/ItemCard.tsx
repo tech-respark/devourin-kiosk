@@ -9,10 +9,12 @@ interface ItemCardProps {
     name: string;
     price: number;
     isVeg: boolean;
-    imageColor?: string; // used for placeholder tint
+    imageColor?: string;
     quantity?: number;
+    hasAddOnOrPortions?: boolean;
     onAdd: () => void;
     onRemove?: () => void;
+    onOpenModal?: () => void;
     maxWidth?: any;
 }
 
@@ -22,20 +24,56 @@ export const ItemCard: React.FC<ItemCardProps> = ({
     isVeg,
     imageColor = theme.colors.theme_light2,
     quantity = 0,
+    hasAddOnOrPortions = false,
     onAdd,
     onRemove,
-    maxWidth
+    onOpenModal,
+    maxWidth,
 }) => {
+    // If item has addons/portions, pressing the card opens the modal
+    const handleAddPress = () => {
+        if (hasAddOnOrPortions) {
+            onOpenModal?.();
+        } else {
+            onAdd();
+        }
+    };
+
+    // Pressing + when already in cart: if has addons/portions → open modal again,
+    // otherwise just increment
+    const handleIncrement = () => {
+        if (hasAddOnOrPortions) {
+            onOpenModal?.();
+        } else {
+            onAdd();
+        }
+    };
+
     return (
-        <View style={[styles.cardContainer, { maxWidth: maxWidth ?? '100%' }]}>
-            <View style={[styles.imagePlaceholder, { backgroundColor: imageColor }]}>
-                <Ionicons name='fast-food-outline' size={60} color={theme.colors.theme} />
-            </View>
+        <View style={[styles.cardContainer, { maxWidth: maxWidth || '100%' }]}>
+            <TouchableOpacity activeOpacity={0.85} onPress={handleAddPress} style={styles.imageWrapper}>
+                <View style={[styles.imagePlaceholder, { backgroundColor: imageColor }]}>
+                    <Ionicons name='fast-food-outline' size={60} color={theme.colors.theme} />
+                </View>
+                {hasAddOnOrPortions && (
+                    <View style={styles.customisableBadge}>
+                        <CustomText fontFamily={theme.fonts.SemiBold} fontSize={theme.fontSize.xsmall} color={theme.colors.theme}>
+                            Customisable
+                        </CustomText>
+                    </View>
+                )}
+            </TouchableOpacity>
 
             <View style={styles.contentContainer}>
                 <View style={styles.infoWrapper}>
                     <View style={styles.titleRow}>
-                        <CustomText fontFamily={theme.fonts.Medium} fontSize={theme.fontSize.medium} color={theme.colors.text} style={styles.titleText} numberOfLines={2}>
+                        <CustomText
+                            fontFamily={theme.fonts.SemiBold}
+                            fontSize={theme.fontSize.medium}
+                            color={theme.colors.text}
+                            style={styles.titleText}
+                            numberOfLines={2}
+                        >
                             {name}
                         </CustomText>
                         <View style={[styles.vegSquare, { borderColor: isVeg ? theme.colors.success : theme.colors.theme }]}>
@@ -46,37 +84,29 @@ export const ItemCard: React.FC<ItemCardProps> = ({
 
                 <View style={styles.actionRow}>
                     <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.large} color={theme.colors.black}>
-                        ₹{price.toFixed(1)}
+                        ₹{price.toFixed(0)}
                     </CustomText>
 
                     {quantity > 0 ? (
                         <LinearGradient style={styles.quantityContainer} colors={['#DD7E33', '#D95C20']}>
-                            <TouchableOpacity
-                                activeOpacity={0.7}
-                                onPress={onRemove}
-                                style={styles.qtyButton}
-                            >
-                                <Ionicons name="remove" size={20} color={theme.colors.white} />
+                            <TouchableOpacity activeOpacity={0.7} onPress={onRemove} style={styles.qtyButton}>
+                                <Ionicons name="remove" size={18} color={theme.colors.white} />
                             </TouchableOpacity>
-                            <View style={styles.qtyLabel}>
+                            <TouchableOpacity
+                                activeOpacity={hasAddOnOrPortions ? 0.7 : 1}
+                                onPress={hasAddOnOrPortions ? onOpenModal : undefined}
+                                style={styles.qtyLabel}
+                            >
                                 <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.medium} color={theme.colors.white}>
                                     {quantity}
                                 </CustomText>
-                            </View>
-                            <TouchableOpacity
-                                activeOpacity={0.7}
-                                onPress={onAdd}
-                                style={styles.qtyButton}
-                            >
-                                <Ionicons name="add" size={20} color={theme.colors.white} />
+                            </TouchableOpacity>
+                            <TouchableOpacity activeOpacity={0.7} onPress={handleIncrement} style={styles.qtyButton}>
+                                <Ionicons name="add" size={18} color={theme.colors.white} />
                             </TouchableOpacity>
                         </LinearGradient>
                     ) : (
-                        <TouchableOpacity
-                            activeOpacity={0.7}
-                            onPress={onAdd}
-                            style={styles.addButton}
-                        >
+                        <TouchableOpacity activeOpacity={0.7} onPress={handleAddPress} style={styles.addButton}>
                             <CustomText fontFamily={theme.fonts.SemiBold} fontSize={theme.fontSize.medium} color={theme.colors.theme}>
                                 + Add
                             </CustomText>
@@ -94,10 +124,12 @@ const styles = StyleSheet.create({
         backgroundColor: theme.colors.white,
         borderRadius: theme.border.sm,
         padding: theme.spacing.md,
-        shadowColor: "#000",
-        boxShadow: "0 1px 2px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)",
+        boxShadow: '0 1px 2px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
         marginBottom: theme.spacing.md,
-        minHeight: 280, // Ensure cards have a consistent minimum height
+        minHeight: 280,
+    },
+    imageWrapper: {
+        position: 'relative',
     },
     imagePlaceholder: {
         height: 140,
@@ -105,6 +137,15 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: theme.spacing.md,
+    },
+    customisableBadge: {
+        position: 'absolute',
+        bottom: theme.spacing.md + 4,
+        left: 6,
+        backgroundColor: theme.colors.theme_light2,
+        borderRadius: theme.border.full,
+        paddingHorizontal: theme.spacing.sm,
+        paddingVertical: 2,
     },
     contentContainer: {
         flex: 1,
@@ -149,16 +190,15 @@ const styles = StyleSheet.create({
         width: 100,
         backgroundColor: theme.colors.theme_light,
         borderWidth: StyleSheet.hairlineWidth,
-        borderColor: theme.colors.theme
+        borderColor: theme.colors.theme,
     },
     quantityContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#F3F6FB',
         borderRadius: theme.border.sm,
         overflow: 'hidden',
         width: 100,
-        height: 48,
+        height: 44,
     },
     qtyButton: {
         flex: 1,
@@ -170,5 +210,5 @@ const styles = StyleSheet.create({
         flex: 1.2,
         alignItems: 'center',
         justifyContent: 'center',
-    }
+    },
 });

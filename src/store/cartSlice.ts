@@ -1,25 +1,50 @@
 import { PayloadAction, createSlice } from "@reduxjs/toolkit";
 import { RootState } from "./index";
 
+export interface CartAddon {
+    addonId: number;
+    addon: string;
+    price: number;
+    quantity: number;
+    addonCatId: number;
+    category: string;
+    cgst: number;
+    sgst: number;
+    igst: number;
+    vat: number;
+    chargable: number;
+    forAll: number;
+}
+
 export interface CartItem {
     itemId: number;
-    localCartId?: string; // unique string for the instance in cart
+    localCartId?: string;
     categoryId: string;
     name: string;
     price: number;
+    salePrice?: number;
     isVeg: boolean;
     imageColor: string;
     quantity: number;
+    remark?: string;
+    addOns?: CartAddon[];
+    // Portion fields
+    customAttributeId?: number;
+    attributeName?: string;
+    // Tax fields (needed for order payload)
+    cgst?: number;
+    sgst?: number;
+    igst?: number;
+    vat?: number;
+    sc?: number;
 }
 
 export interface CartState {
     cartItems: CartItem[];
-    globalInstruction: string;
 }
 
 const initialState: CartState = {
     cartItems: [],
-    globalInstruction: '',
 };
 
 const cartSlice = createSlice({
@@ -27,13 +52,42 @@ const cartSlice = createSlice({
     initialState,
     reducers: {
         addToCart: (state, action: PayloadAction<Omit<CartItem, 'quantity' | 'localCartId'>>) => {
-            const existingItem = state.cartItems.find(i => i.itemId === action.payload.itemId);
+            const existingItem = state.cartItems.find(i =>
+                i.itemId === action.payload.itemId &&
+                i.customAttributeId === action.payload.customAttributeId
+            );
             if (existingItem) {
                 existingItem.quantity += 1;
             } else {
                 state.cartItems.push({
                     ...action.payload,
                     quantity: 1,
+                    localCartId: Math.random().toString(36).substr(2, 9)
+                });
+            }
+        },
+        addToCartWithOptions: (state, action: PayloadAction<{
+            item: Omit<CartItem, 'quantity' | 'localCartId'>;
+            quantity: number;
+            remark?: string;
+            addOns?: CartAddon[];
+        }>) => {
+            const { item, quantity, remark, addOns } = action.payload;
+            const existingItem = state.cartItems.find(i =>
+                i.itemId === item.itemId &&
+                i.customAttributeId === item.customAttributeId &&
+                !remark && !i.remark &&
+                (!addOns || addOns.length === 0) &&
+                (!i.addOns || i.addOns.length === 0)
+            );
+            if (existingItem) {
+                existingItem.quantity += quantity;
+            } else {
+                state.cartItems.push({
+                    ...item,
+                    quantity,
+                    remark,
+                    addOns,
                     localCartId: Math.random().toString(36).substr(2, 9)
                 });
             }
@@ -57,20 +111,33 @@ const cartSlice = createSlice({
                 item.quantity = action.payload.quantity;
             }
         },
-        setGlobalInstruction: (state, action: PayloadAction<string>) => {
-            state.globalInstruction = action.payload;
+        setItemRemark: (state, action: PayloadAction<{ localCartId: string; remark: string }>) => {
+            const item = state.cartItems.find(i => i.localCartId === action.payload.localCartId);
+            if (item) {
+                item.remark = action.payload.remark;
+            }
         },
         clearCart: (state) => {
             state.cartItems = [];
-            state.globalInstruction = '';
         }
     },
 });
 
-export const { addToCart, decrementFromCart, removeFromCart, updateQuantity, setGlobalInstruction, clearCart } = cartSlice.actions;
+export const {
+    addToCart,
+    addToCartWithOptions,
+    decrementFromCart,
+    removeFromCart,
+    updateQuantity,
+    setItemRemark,
+    clearCart
+} = cartSlice.actions;
 
 export const selectCartItems = (state: RootState) => state.cart.cartItems;
-export const selectCartSubtotal = (state: RootState) => state.cart.cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-export const selectGlobalInstruction = (state: RootState) => state.cart.globalInstruction;
+export const selectCartSubtotal = (state: RootState) =>
+    state.cart.cartItems.reduce((acc, item) => {
+        const addonTotal = (item.addOns || []).reduce((a, addon) => a + addon.price * addon.quantity, 0);
+        return acc + (item.price * item.quantity) + addonTotal;
+    }, 0);
 
 export default cartSlice.reducer;

@@ -3,14 +3,16 @@ import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Image, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { BottomDock } from '../components/BottomDock';
 import CustomText from '../components/CustomText';
 import { selectCartItems, selectCartSubtotal } from '../src/store/cartSlice';
+import { setCustomerDetails } from '../src/store/userSlice';
 import { theme } from '../src/styles/theme';
 
 export default function CustomerDetails() {
     const router = useRouter();
+    const dispatch = useDispatch();
     const [name, setName] = useState('');
     const [mobile, setMobile] = useState('');
 
@@ -19,7 +21,9 @@ export default function CustomerDetails() {
     const totalQty = cartItems.reduce((acc, item) => acc + item.quantity, 0);
 
     const handleConfirm = () => {
-        // Here you would typically save customer data to state
+        if (name.trim()) {
+            dispatch(setCustomerDetails({ name: name.trim(), mobile: mobile.trim() }));
+        }
         router.push('/payment');
     };
 
@@ -29,29 +33,19 @@ export default function CustomerDetails() {
 
     return (
         <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-            {/* Header with Back button */}
+            {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
                     <Ionicons name="chevron-back" size={20} color={theme.colors.text} />
                     <CustomText fontFamily={theme.fonts.SemiBold} fontSize={theme.fontSize.medium}>Back</CustomText>
                 </TouchableOpacity>
-                <Image
-                    source={require('../assets/icons/logo.png')}
-                    style={styles.devourinLogo}
-                    resizeMode="contain"
-                />
+                <Image source={require('../assets/icons/logo.png')} style={styles.devourinLogo} resizeMode="contain" />
                 <View style={{ width: 100 }} />
             </View>
 
             <View style={styles.mainContent}>
-                {/* SIHI Logo */}
-                <Image
-                    source={require('../assets/icons/sihi_logo.png')}
-                    style={styles.sihiLogo}
-                    resizeMode="contain"
-                />
+                <Image source={require('../assets/icons/sihi_logo.png')} style={styles.sihiLogo} resizeMode="contain" />
 
-                {/* Form Card */}
                 <View style={styles.formCard}>
                     <CustomText fontFamily={theme.fonts.SemiBold} fontSize={theme.fontSize.headingX} style={styles.formTitle}>
                         Enter Your Details To Place Your Order
@@ -102,22 +96,13 @@ export default function CustomerDetails() {
                 </View>
             </View>
 
-            {/* Bottom Dock */}
-            <BottomDock
-                itemCount={totalQty}
-                subTotal={subTotal}
-                onCancel={() => router.back()}
-                hideProceed={true}
-            />
+            <BottomDock itemCount={totalQty} subTotal={subTotal} onCancel={() => router.back()} hideProceed={true} />
         </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#fff',
-    },
+    container: { flex: 1, backgroundColor: '#fff' },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -138,21 +123,9 @@ const styles = StyleSheet.create({
         borderRadius: theme.border.md,
         gap: theme.spacing.xs,
     },
-    devourinLogo: {
-        width: 150,
-        height: 40,
-    },
-    mainContent: {
-        flex: 1,
-        alignItems: 'center',
-        paddingTop: theme.spacing.xxxl,
-        backgroundColor: theme.colors.background
-    },
-    sihiLogo: {
-        width: 300,
-        height: 200,
-        marginBottom: theme.spacing.xxxl,
-    },
+    devourinLogo: { width: 150, height: 40 },
+    mainContent: { flex: 1, alignItems: 'center', paddingTop: theme.spacing.xxxl, backgroundColor: theme.colors.background },
+    sihiLogo: { width: 300, height: 200, marginBottom: theme.spacing.xxxl },
     formCard: {
         width: '70%',
         backgroundColor: '#fff',
@@ -161,11 +134,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         boxShadow: '0px 4px 10px 0px rgba(0, 0, 0, 0.05)',
     },
-    formTitle: {
-        marginBottom: theme.spacing.xxl,
-        color: '#162640',
-        textAlign: 'center',
-    },
+    formTitle: { marginBottom: theme.spacing.xxl, color: '#162640', textAlign: 'center' },
     inputWrapper: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -184,18 +153,8 @@ const styles = StyleSheet.create({
         borderRightColor: '#E0E0E0',
         marginRight: theme.spacing.md,
     },
-    input: {
-        flex: 1,
-        fontSize: 20,
-        fontFamily: 'Poppins-Medium',
-        color: '#333',
-    },
-    btnRow: {
-        flexDirection: 'row',
-        width: '100%',
-        gap: theme.spacing.lg,
-        marginTop: theme.spacing.xl,
-    },
+    input: { flex: 1, fontSize: 20, fontFamily: 'Poppins-Medium', color: '#333' },
+    btnRow: { flexDirection: 'row', width: '100%', gap: theme.spacing.lg, marginTop: theme.spacing.xl },
     skipBtn: {
         flex: 1,
         height: 70,
@@ -212,5 +171,5 @@ const styles = StyleSheet.create({
         borderRadius: 15,
         alignItems: 'center',
         justifyContent: 'center',
-    }
+    },
 });

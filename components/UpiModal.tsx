@@ -10,16 +10,14 @@ interface UpiModalProps {
     onClose: () => void;
     payableAmount: number;
     qrString: string;
+    onPaymentConfirm?: () => void;
 }
 
-export const UpiModal: React.FC<UpiModalProps> = ({ visible, onClose, payableAmount, qrString }) => {
+export const UpiModal: React.FC<UpiModalProps> = ({ visible, onClose, payableAmount, qrString, onPaymentConfirm }) => {
+    if (!visible) return null;
+
     return (
-        <Modal
-            animationType="slide"
-            transparent={true}
-            visible={visible}
-            onRequestClose={onClose}
-        >
+        <View style={[StyleSheet.absoluteFill, { zIndex: 99999 }]}>
             <View style={styles.overlay}>
                 <View style={styles.modalContent}>
                     {/* Status Header */}
@@ -71,9 +69,9 @@ export const UpiModal: React.FC<UpiModalProps> = ({ visible, onClose, payableAmo
                     </View>
 
                     {/* Status Button / Footer */}
-                    <TouchableOpacity activeOpacity={0.8} style={styles.checkStatusBtn}>
+                    <TouchableOpacity activeOpacity={0.8} style={styles.checkStatusBtn} onPress={onPaymentConfirm ?? onClose}>
                         <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.medium} color="#fff">
-                            Check Payment Status
+                            Payment Done
                         </CustomText>
                     </TouchableOpacity>
 
@@ -84,7 +82,7 @@ export const UpiModal: React.FC<UpiModalProps> = ({ visible, onClose, payableAmo
                     </TouchableOpacity>
                 </View>
             </View>
-        </Modal>
+        </View>
     );
 };
 

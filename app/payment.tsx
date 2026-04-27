@@ -1,26 +1,79 @@
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Image, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Image, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Toast from 'react-native-toast-message';
 import { useDispatch, useSelector } from 'react-redux';
 import CustomText from '../components/CustomText';
 import { UpiModal } from '../components/UpiModal';
-import { clearCart, selectCartSubtotal } from '../src/store/cartSlice';
+import { clearCart, selectCartItems, selectCartSubtotal } from '../src/store/cartSlice';
+import { clearCustomerDetails } from '../src/store/userSlice';
 import { theme } from '../src/styles/theme';
+import { buildKioskOrderPayload } from '../src/utils/Cart';
+import { useEnvironment } from '../src/utils/Constants';
+import { makeAPIRequest } from '../src/utils/Helper';
 
 const PAYMENT_METHODS = [
-    { id: 'upi', name: 'UPI / QR', icon: 'tablet-portrait-outline', disabled: false, type: 'ionic' },
-    { id: 'card', name: 'Credit / Debit', icon: 'credit-card', disabled: true, type: 'material' },
-    { id: 'cash', name: 'Cash Counter', icon: 'payments', disabled: true, type: 'material' },
+    { id: 'upi', name: 'UPI / QR', icon: 'qr-code', disabled: false, type: 'material', txn: 'UPI' },
+    { id: 'card', name: 'Credit / Debit', icon: 'credit-card', disabled: true, type: 'material', txn: 'Card' },
+    { id: 'cash', name: 'Cash Counter', icon: 'payments', disabled: true, type: 'material', txn: 'Cash' },
 ];
+
+type LoaderState = 'idle' | 'payment' | 'placing' | 'success' | 'error';
 
 export default function PaymentSelection() {
     const router = useRouter();
     const dispatch = useDispatch();
+    const { apiBaseUrl } = useEnvironment();
     const totalPayable = useSelector(selectCartSubtotal);
+    const cartItems = useSelector(selectCartItems);
+
     const [selectedMethod, setSelectedMethod] = useState('upi');
     const [showUpiModal, setShowUpiModal] = useState(false);
+    const [loaderState, setLoaderState] = useState<LoaderState>('idle');
+    const [loaderText, setLoaderText] = useState('');
+
+    const selectedTxnName = PAYMENT_METHODS.find(m => m.id === selectedMethod)?.txn ?? 'UPI';
+
+    const placeOrder = async () => {
+        setLoaderState('placing');
+        setLoaderText('Placing your order...');
+        try {
+            const payload = buildKioskOrderPayload(cartItems as any, selectedTxnName);
+            const reqId = Date.now();
+            const headers: any = { headers: { 'Content-Type': 'application/json', rqid: reqId } };
+            const response = await makeAPIRequest(`${apiBaseUrl}orderbystaffmobile`, payload, 'POST', headers);
+            if (response) {
+                dispatch(clearCart());
+                dispatch(clearCustomerDetails());
+                router.replace('/confirmation');
+            } else {
+                setLoaderState('error');
+                setLoaderText('');
+                Toast.show({ type: 'error', text1: 'Order failed. Please try again.' });
+            }
+        } catch (e) {
+            setLoaderState('error');
+            setLoaderText('');
+            Toast.show({ type: 'error', text1: 'Something went wrong. Please try again.' });
+        }
+    };
+
+    // Called when UPI modal "confirms" payment (mock flow)
+    const handleUpiPaymentConfirmed = async () => {
+        setShowUpiModal(false);
+        // 3-second mock payment processing
+        setLoaderState('payment');
+        setLoaderText('Processing Payment...');
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        setLoaderState('success');
+        setLoaderText('Payment Successful!');
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Call the real order API
+        await placeOrder();
+    };
 
     const handlePay = () => {
         if (selectedMethod === 'upi') {
@@ -28,12 +81,7 @@ export default function PaymentSelection() {
         }
     };
 
-    const handleUpiClose = () => {
-        setShowUpiModal(false);
-        // Usually, you only clear on SUCCESS, but for this mock, we'll clear it.
-        dispatch(clearCart());
-        router.replace('/menu');
-    };
+    const isLoading = loaderState === 'payment' || loaderState === 'placing' || loaderState === 'success';
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
@@ -41,31 +89,26 @@ export default function PaymentSelection() {
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
                     <Ionicons name="chevron-back" size={20} color={theme.colors.text} />
-                    <CustomText fontFamily={theme.fonts.SemiBold} fontSize={theme.fontSize.medium}>Back To Cart</CustomText>
+                    <CustomText fontFamily={theme.fonts.SemiBold} fontSize={theme.fontSize.medium}>Back</CustomText>
                 </TouchableOpacity>
-                <Image
-                    source={require('../assets/icons/logo.png')}
-                    style={styles.devourinLogo}
-                    resizeMode="contain"
-                />
+                <Image source={require('../assets/icons/logo.png')} style={styles.devourinLogo} resizeMode="contain" />
                 <View style={{ width: 100 }} />
             </View>
 
-            {/* Main Content Centered */}
+            {/* Main Content */}
             <View style={styles.mainContent}>
                 <View style={styles.paymentCard}>
                     <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.heading} style={styles.totalLabel}>
                         Total Payable Amount
                     </CustomText>
                     <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.headingXXXX} color="#D13C25" style={styles.totalValue}>
-                        ₹{totalPayable.toFixed(1)}
+                        ₹{totalPayable.toFixed(0)}
                     </CustomText>
 
                     <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.heading} style={styles.selectTitle}>
                         Select Payment Method
                     </CustomText>
 
-                    {/* Payment Options Row */}
                     <View style={styles.methodsRow}>
                         {PAYMENT_METHODS.map(method => {
                             const isSelected = selectedMethod === method.id;
@@ -78,16 +121,14 @@ export default function PaymentSelection() {
                                     style={[
                                         styles.methodCard,
                                         isSelected && styles.methodCardSelected,
-                                        isDisabled && styles.methodCardDisabled
+                                        isDisabled && styles.methodCardDisabled,
                                     ]}
                                     onPress={() => setSelectedMethod(method.id)}
                                 >
                                     <View style={[styles.iconBox, isSelected && styles.iconBoxSelected]}>
-                                        {method.type === 'ionic' ? (
-                                            <Ionicons name={method.icon as any} size={32} color={isDisabled ? '#CCC' : '#333'} />
-                                        ) : (
-                                            <MaterialIcons name={method.icon as any} size={32} color={isDisabled ? '#CCC' : '#333'} />
-                                        )}
+
+                                        <MaterialIcons name={method.icon as any} size={32} color={isDisabled ? '#CCC' : '#333'} />
+
                                     </View>
                                     <CustomText
                                         fontFamily={theme.fonts.Medium}
@@ -102,34 +143,53 @@ export default function PaymentSelection() {
                         })}
                     </View>
 
-                    {/* Action Button */}
+                    {/* Pay Button */}
                     <TouchableOpacity
                         onPress={handlePay}
-                        activeOpacity={0.8}
-                        style={[styles.payButton, !selectedMethod && { backgroundColor: '#F8A5A5' }]}
+                        activeOpacity={0.85}
+                        disabled={!selectedMethod || isLoading}
                     >
-                        <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.heading} color={theme.colors.white}>
-                            {selectedMethod ? "Select Payment Method" : "Please Select Method"}
-                        </CustomText>
+                        <LinearGradient
+                            colors={selectedMethod ? ['#DD7E33', '#D95C20'] : ['#CCC', '#CCC']}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 0 }}
+                            style={styles.payButton}
+                        >
+                            <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.heading} color={theme.colors.white}>
+                                Pay ₹{totalPayable.toFixed(0)}
+                            </CustomText>
+                        </LinearGradient>
                     </TouchableOpacity>
                 </View>
 
                 <UpiModal
                     visible={showUpiModal}
-                    onClose={handleUpiClose}
+                    onClose={() => setShowUpiModal(false)}
                     payableAmount={totalPayable}
                     qrString={`upi://pay?pa=devourin@bank&am=${totalPayable}&tn=OrderReceipt`}
+                    onPaymentConfirm={handleUpiPaymentConfirmed}
                 />
             </View>
+
+            {/* Loading Overlay */}
+            {isLoading && (
+                <View style={styles.loadingOverlay}>
+                    {loaderState === 'success' ? (
+                        <Ionicons name="checkmark-circle" size={80} color="#4CAF50" />
+                    ) : (
+                        <ActivityIndicator size="large" color={theme.colors.theme} />
+                    )}
+                    <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.headingX} color={theme.colors.white} style={{ marginTop: 24 }}>
+                        {loaderText}
+                    </CustomText>
+                </View>
+            )}
         </SafeAreaView>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#F8FAFF',
-    },
+    container: { flex: 1, backgroundColor: '#FFF' },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -150,16 +210,8 @@ const styles = StyleSheet.create({
         borderRadius: theme.border.md,
         gap: theme.spacing.xs,
     },
-    devourinLogo: {
-        width: 150,
-        height: 40,
-    },
-    mainContent: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: theme.spacing.lg,
-    },
+    devourinLogo: { width: 150, height: 40 },
+    mainContent: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: theme.spacing.lg, backgroundColor: theme.colors.background },
     paymentCard: {
         backgroundColor: '#fff',
         borderRadius: 40,
@@ -167,23 +219,11 @@ const styles = StyleSheet.create({
         width: '90%',
         maxWidth: 700,
         alignItems: 'center',
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.05,
-        shadowRadius: 30,
-        elevation: 5,
+        boxShadow: '0px 10px 30px 0px rgba(0,0,0,0.07)',
     },
-    totalLabel: {
-        color: '#162640',
-        marginBottom: theme.spacing.md,
-    },
-    totalValue: {
-        marginBottom: theme.spacing.xxxl,
-    },
-    selectTitle: {
-        color: '#162640',
-        marginBottom: theme.spacing.xl,
-    },
+    totalLabel: { color: '#162640', marginBottom: theme.spacing.md },
+    totalValue: { marginBottom: theme.spacing.xxxl },
+    selectTitle: { color: '#162640', marginBottom: theme.spacing.xl },
     methodsRow: {
         flexDirection: 'row',
         width: '100%',
@@ -203,14 +243,8 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         padding: theme.spacing.md,
     },
-    methodCardSelected: {
-        borderColor: theme.colors.theme,
-        borderWidth: 2,
-    },
-    methodCardDisabled: {
-        backgroundColor: '#F9F9F9',
-        opacity: 0.6,
-    },
+    methodCardSelected: { borderColor: theme.colors.theme, borderWidth: 2 },
+    methodCardDisabled: { backgroundColor: '#F9F9F9', opacity: 0.6 },
     iconBox: {
         width: 60,
         height: 60,
@@ -220,15 +254,19 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: theme.spacing.md,
     },
-    iconBoxSelected: {
-        backgroundColor: '#FFEAD1',
-    },
+    iconBoxSelected: { backgroundColor: '#FFEAD1' },
     payButton: {
-        width: '100%',
+        width: 400,
         height: 80,
-        backgroundColor: '#F8A5A5', // Standard disabled-ish red look from screenshot
         borderRadius: 20,
         alignItems: 'center',
         justifyContent: 'center',
-    }
+    },
+    loadingOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(0,0,0,0.75)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 999,
+    },
 });

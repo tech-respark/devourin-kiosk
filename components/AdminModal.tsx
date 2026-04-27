@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
-import { Modal, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Pressable, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { theme } from '../src/styles/theme';
 import CustomText from './CustomText';
 
@@ -13,15 +13,13 @@ interface AdminModalProps {
 }
 
 export const AdminModal: React.FC<AdminModalProps> = ({ visible, onClose, onResync, onLogout }) => {
+    if (!visible) return null;
+
     return (
-        <Modal
-            animationType="fade"
-            transparent={true}
-            visible={visible}
-            onRequestClose={onClose}
-        >
+        <View style={[StyleSheet.absoluteFill, { zIndex: 99999 }]}>
             <View style={styles.overlay}>
-                <View style={styles.modalContent}>
+                <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+                <View style={[styles.modalContent, { zIndex: 100000 }]}>
                     {/* Header */}
                     <View style={styles.header}>
                         <View style={styles.adminBadge}>
@@ -79,7 +77,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({ visible, onClose, onResy
                     </TouchableOpacity>
                 </View>
             </View>
-        </Modal>
+        </View>
     );
 };
 
