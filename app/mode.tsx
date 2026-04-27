@@ -2,7 +2,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Image, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Image, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
 import { AdminModal } from '../components/AdminModal';
@@ -244,9 +244,13 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         shadowColor: "#000",
-        shadowOffset: { width: 0, height: 15 },
-        shadowOpacity: 0.2,
-        shadowRadius: 20,
+        ...(Platform.OS === 'web' ? {
+            boxShadow: '0px 15px 20px rgba(0, 0, 0, 0.2)'
+        } : {
+            shadowOffset: { width: 0, height: 15 },
+            shadowOpacity: 0.2,
+            shadowRadius: 20,
+        }),
         elevation: 10,
     },
     iconWrapper: {

@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
-import { Pressable, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { theme } from '../src/styles/theme';
 import CustomText from './CustomText';
 
@@ -95,9 +95,13 @@ const styles = StyleSheet.create({
         borderRadius: 35,
         padding: theme.spacing.xl,
         shadowColor: "#000",
-        shadowOffset: { width: 0, height: 20 },
-        shadowOpacity: 0.2,
-        shadowRadius: 40,
+        ...(Platform.OS === 'web' ? {
+            boxShadow: '0px 20px 40px rgba(0, 0, 0, 0.2)'
+        } : {
+            shadowOffset: { width: 0, height: 20 },
+            shadowOpacity: 0.2,
+            shadowRadius: 40,
+        }),
         elevation: 15,
     },
     header: {

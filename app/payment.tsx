@@ -2,7 +2,8 @@ import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { ActivityIndicator, Image, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Image, Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
+import RazorpayCheckout from 'react-native-razorpay';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import { useDispatch, useSelector } from 'react-redux';
@@ -22,6 +23,20 @@ const PAYMENT_METHODS = [
 
 type LoaderState = 'idle' | 'payment' | 'placing' | 'success' | 'error';
 
+// Dynamic script loader for Razorpay Web
+const loadRazorpayScript = () => {
+    return new Promise((resolve) => {
+        if (typeof document === 'undefined') return resolve(false);
+        if ((window as any).Razorpay) return resolve(true);
+        
+        const script = document.createElement('script');
+        script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+        script.onload = () => resolve(true);
+        script.onerror = () => resolve(false);
+        document.body.appendChild(script);
+    });
+};
+
 export default function PaymentSelection() {
     const router = useRouter();
     const dispatch = useDispatch();
@@ -33,44 +48,83 @@ export default function PaymentSelection() {
     const [loaderState, setLoaderState] = useState<LoaderState>('idle');
     const [loaderText, setLoaderText] = useState('');
 
+    const handleSuccess = async (data: any) => {
+        console.log("Payment Success Handler:", data);
+        setLoaderState('success');
+        setLoaderText('Order Successful!');
+        
+        // Printer list check (maintained from user's manual addition)
+        try {
+            const url = 'http://192.168.10.176:7009/devourin-printing/v1/listprinters';
+            const printerData = await makeAPIRequest(url, null, 'GET');
+            console.log("HELLO - Printers:", printerData);
+        } catch (err) {
+            console.log("Printer check skipped/failed");
+        }
+
+        dispatch(clearCart());
+        dispatch(clearCustomerDetails());
+        router.replace('/confirmation');
+    };
+
+    const handleFailure = (error: any) => {
+        console.log("Payment Failure Handler:", error);
+        setLoaderState('error');
+        setLoaderText('');
+        Toast.show({
+            type: 'error',
+            text1: 'Payment Failed',
+            text2: error.description || 'Transaction cancelled'
+        });
+    };
+
     const placeOrder = async () => {
         setLoaderState('placing');
         setLoaderText('Validating Order...');
 
         try {
             const payload = buildPluralOrderPayload(cartItems as any);
-
-            // 1. Validate Order
             const headers = { headers: { 'Content-Type': 'application/json', 'user': 'sadmin1234', 'pwd': 'sadmin1234' } }
+            
             const validateResp = await makeAPIRequest(`${apiBaseUrl}validateOrder`, payload, 'POST', headers);
-            console.log(validateResp)
+            
             if (validateResp && validateResp.verified) {
                 setLoaderText('Generating Payment Order...');
 
-                // 2. Generate Razorpay Order
                 const tempPayload = { ...payload, paymentVendor: 'Razorpay' }
                 const razorResp = await makeAPIRequest(`${apiBaseUrl}razororder1`, tempPayload, 'POST', headers);
-                console.log("-----", razorResp)
+                
                 if (razorResp && razorResp.order_id) {
                     setLoaderState('payment');
                     setLoaderText('Waiting for Payment...');
 
-                    // 3. Open Razorpay 
-                    // Note: Since we are on a kiosk (likely Windows/Web or Android), 
-                    // we'll try to use the Razorpay checkout.
-                    console.log("Opening Razorpay with:", razorResp);
+                    const options = {
+                        ...razorResp,
+                        // Convert to paise for Razorpay
+                        amount: Math.round(Number(razorResp.amount) * 100),
+                        description: razorResp.description || 'Devourin Kiosk Order',
+                        name: razorResp.name || 'Devourin',
+                        theme: { color: razorResp.theme?.color || '#D95C20' },
+                    };
+                    delete (options as any)['callback_url'];
 
-                    // For now, we mock the success because installing native modules 
-                    // requires a rebuild. If the user has it installed, we would call:
-                    // RazorpayCheckout.open(razorResp).then(...)
+                    if (Platform.OS === 'web') {
+                        // WEB FLOW
+                        const isScriptLoaded = await loadRazorpayScript();
+                        if (!isScriptLoaded) throw new Error('Razorpay script failed to load');
 
-                    await new Promise(resolve => setTimeout(resolve, 3000));
-                    setLoaderState('success');
-                    setLoaderText('Order Successful!');
-
-                    dispatch(clearCart());
-                    dispatch(clearCustomerDetails());
-                    router.replace('/confirmation');
+                        const rzp = new (window as any).Razorpay({
+                            ...options,
+                            handler: (response: any) => handleSuccess(response),
+                            modal: { ondismiss: () => handleFailure({ description: 'Payment Dismissed' }) }
+                        });
+                        rzp.open();
+                    } else {
+                        // NATIVE FLOW
+                        RazorpayCheckout.open(options)
+                            .then(handleSuccess)
+                            .catch(handleFailure);
+                    }
                 } else {
                     throw new Error('Failed to create Razorpay order');
                 }
@@ -78,7 +132,7 @@ export default function PaymentSelection() {
                 throw new Error('Order validation failed');
             }
         } catch (e) {
-            console.log(e)
+            console.log(e);
             setLoaderState('error');
             setLoaderText('');
             Toast.show({ type: 'error', text1: 'Order failed. Please try again.' });
@@ -130,9 +184,7 @@ export default function PaymentSelection() {
                                     onPress={() => setSelectedMethod(method.id)}
                                 >
                                     <View style={[styles.iconBox, isSelected && styles.iconBoxSelected]}>
-
                                         <MaterialIcons name={method.icon as any} size={32} color={isDisabled ? '#CCC' : '#333'} />
-
                                     </View>
                                     <CustomText
                                         fontFamily={theme.fonts.Medium}
@@ -182,7 +234,7 @@ export default function PaymentSelection() {
             )}
         </SafeAreaView>
     );
-};
+}
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#FFF' },

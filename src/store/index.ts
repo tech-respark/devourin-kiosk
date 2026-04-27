@@ -1,13 +1,18 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { combineReducers, configureStore } from '@reduxjs/toolkit';
+import { Platform } from 'react-native';
 import { persistReducer, persistStore } from 'redux-persist';
 import cartReducer from './cartSlice';
 import menuReducer from './menuSlice';
 import userReducer from './userSlice';
 
+const storage = Platform.OS === 'web' 
+    ? require('redux-persist/lib/storage').default 
+    : AsyncStorage;
+
 const persistConfig = {
     key: 'root',
-    storage: AsyncStorage,
+    storage,
     whitelist: ['user'], // only persist user state (config, login)
 };
 
