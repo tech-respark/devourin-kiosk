@@ -1,5 +1,6 @@
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
+import Head from 'expo-router/head';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect } from 'react';
@@ -64,6 +65,9 @@ export default function RootLayout() {
   return (
     <Provider store={store}>
       <PersistGate loading={null} persistor={persistor}>
+        <Head>
+          <title>Devourin Kiosk</title>
+        </Head>
         <KioskManager>
           <Stack screenOptions={{ headerShown: false }}>
               <Stack.Screen name="index" />

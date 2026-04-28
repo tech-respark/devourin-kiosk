@@ -9,7 +9,7 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.pushkara.devourinkiosk"
+      "bundleIdentifier": "com.relfor.devourinkiosk"
     },
     "android": {
       "adaptiveIcon": {
@@ -19,7 +19,7 @@
         "monochromeImage": "./assets/icons/app_icon.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.pushkara.devourinkiosk"
+      "package": "com.relfor.devourinkiosk"
     },
     "web": {
       "output": "static",
