@@ -4,6 +4,7 @@ interface CustomerDetails {
     name: string;
     mobile: string;
     userId?: string | number;
+    address?: any;
 }
 
 interface UserState {

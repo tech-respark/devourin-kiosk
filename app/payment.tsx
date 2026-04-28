@@ -70,6 +70,7 @@ export default function PaymentSelection() {
 
         try {
             const payload = buildPluralOrderPayload(cartItems as any);
+            console.log(JSON.stringify(payload))
             const headers = { headers: { 'Content-Type': 'application/json', 'user': 'sadmin1234', 'pwd': 'sadmin1234' } }
             const validateResp = await makeAPIRequest(`${apiBaseUrl}validateOrder`, payload, 'POST', headers);
 

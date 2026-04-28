@@ -31,12 +31,31 @@ export default function ConfirmationScreen() {
             try {
                 const url = `${apiBaseUrl}qsrkotandbillprintdata?id=${orderId}`;
                 const printData = await makeAPIRequest(url, null, 'GET');
-                if (printData) {
-                    const res = await makeAPIRequest(PRINTER_URL, printData, 'POST', {}, '', true, undefined, false);
-                    if (res && res.ok) {
-                        console.log("Print successful, calling settlement API...");
+                if (printData && printData.length > 0) {
+                    const printRequests: Promise<any>[] = [];
+                    const kotPrints: any = [];
+                    const modifiedPrinters = printData.map((printerItem: any) => {
+                        if (printerItem.type === 'KOT') {
+                            kotPrints.push(printerItem);
+                        }
+                        return { ...printerItem, printer: 'kiosk' };
+                    });
+
+                    // Send all printers marked as kiosk
+                    printRequests.push(makeAPIRequest(PRINTER_URL, modifiedPrinters, 'POST', {}, '', true, undefined, false));
+
+                    // Separately send KOT prints if they exist
+                    if (kotPrints.length > 0) {
+                        printRequests.push(makeAPIRequest(PRINTER_URL, kotPrints, 'POST', {}, '', true, undefined, false));
+                    }
+
+                    const results = await Promise.all(printRequests);
+                    const allSucceeded = results.every(res => res && res.ok);
+
+                    if (allSucceeded) {
+                        console.log("All prints successful, calling settlement API...");
                         const headers = { headers: { 'Content-Type': 'application/json', 'id': orderId } }
-                        const settlementRes = await makeAPIRequest(`${apiBaseUrl}markorderkotprinted`, {}, 'POST', headers);
+                        await makeAPIRequest(`${apiBaseUrl}markorderkotprinted`, {}, 'POST', headers);
                     }
                 }
             } catch (err) {

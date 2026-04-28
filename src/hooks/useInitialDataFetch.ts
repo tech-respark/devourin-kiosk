@@ -4,23 +4,13 @@ import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { setAddOnCategories, setAddOnItems, setCategories, setItemImages, setMenuItems, setOrganisedMenuItems } from '../store/menuSlice';
 import { selectBranchId, setBranchConfigs, setMobileSettings } from '../store/userSlice';
 import { NETWORK_ERROR, useEnvironment } from '../utils/Constants';
-import { getLocalPrinterBaseUrl, groupPortions, makeAPIRequest, organizeMenu } from '../utils/Helper';
+import { groupPortions, makeAPIRequest, organizeMenu } from '../utils/Helper';
 
 export const useInitialDataFetch = () => {
     const dispatch = useAppDispatch();
     const branchId = useAppSelector(selectBranchId) || 0;
     const { apiBaseUrl } = useEnvironment();
     const [loading, setLoading] = useState<boolean>(false);
-
-    const getPrinterStatus = async () => {
-        try {
-            const url = `${getLocalPrinterBaseUrl()}/devourin-printing/v1/listprinters`;
-            const printerData = await makeAPIRequest(url, null, 'GET');
-            console.log(printerData)
-        } catch (err) {
-            Toast.show({ text1: 'Printer not connected', type: 'error' });
-        }
-    };
 
     // Fetch Categories
     const getCategories = async () => {
@@ -119,7 +109,6 @@ export const useInitialDataFetch = () => {
                 getAddOnCategories(),
                 getMobileSettings(),
                 getBranchConfigs(),
-                getPrinterStatus(),
                 getItemImages()
             ]);
         } catch (error) {
