@@ -3,12 +3,13 @@ import { selectMobileSettings } from '@/src/store/userSlice';
 import { CUSTOMER_DETAILS_REQUIRED } from '@/src/utils/Constants';
 import { Feather } from '@expo/vector-icons';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React from 'react';
-import { Image } from 'expo-image';
 import {
     FlatList,
+    Platform,
     StyleSheet,
     TextInput,
     TouchableOpacity,
@@ -29,6 +30,7 @@ import {
 } from '../src/store/cartSlice';
 import { selectItemImages } from '../src/store/menuSlice';
 import { theme } from '../src/styles/theme';
+import { loadRazorpayScript } from '../src/utils/Helper';
 
 export default function MyOrderCart() {
     const dispatch = useDispatch();
@@ -39,6 +41,11 @@ export default function MyOrderCart() {
     const currency = useAppSelector(selectMobileSettings)?.['currency_symbol'] || '₹';
 
     const [showCancelModal, setShowCancelModal] = React.useState(false);
+
+    React.useEffect(() => {
+        // Pre-load payment script for smooth transition
+        loadRazorpayScript();
+    }, []);
 
     const totalQty = cartItems.reduce((acc, item) => acc + item.quantity, 0);
 
@@ -71,7 +78,9 @@ export default function MyOrderCart() {
             <View style={styles.itemDetails}>
                 <View style={styles.itemHeader}>
                     <View style={styles.itemNameRow}>
-                        <View style={[styles.vegDot, { backgroundColor: item.isVeg ? theme.colors.success : theme.colors.theme }]} />
+                        <View style={[styles.vegSquare, { borderColor: item.isVeg ? theme.colors.success : theme.colors.error }]}>
+                            <View style={[styles.vegCircle, { backgroundColor: item.isVeg ? theme.colors.success : theme.colors.error }]} />
+                        </View>
                         <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.large} style={styles.itemName} numberOfLines={2}>
                             {item.name}{item.attributeName ? ` (${item.attributeName})` : ''}
                         </CustomText>
@@ -93,14 +102,13 @@ export default function MyOrderCart() {
                 )}
 
                 <View style={styles.instructionContainer}>
-                    <Feather name="edit-2" size={18} color={item.remark ? '#8B0000' : theme.colors.theme} />
+                    <Feather name="edit-2" size={18} color={theme.colors.theme_dark} />
                     <TextInput
                         style={[styles.input, { fontFamily: theme.fonts.Medium }]}
                         value={item.remark}
                         onChangeText={(text) => { dispatch(setItemRemark({ localCartId: item.localCartId, remark: text })); }}
                         placeholder="Add Instruction"
-                        placeholderTextColor={theme.colors.theme}
-                        multiline
+                        placeholderTextColor={theme.colors.theme_dark}
                     />
                 </View>
 
@@ -152,7 +160,7 @@ export default function MyOrderCart() {
                 <View style={styles.headerTitleRow}>
                     <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.headingX} style={styles.headerTitle}>My Order</CustomText>
                     <View style={styles.badgeContainer}>
-                        <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.medium} color={theme.colors.theme}>
+                        <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.medium} color={theme.colors.theme_dark}>
                             {totalQty}
                         </CustomText>
                     </View>
@@ -215,18 +223,18 @@ const styles = StyleSheet.create({
         borderBottomColor: '#F0F0F0',
         zIndex: 10,
     },
-    input: {
-        fontSize: theme.fontSize.regular,
-        borderRadius: 5,
-        marginLeft: 3,
-        backgroundColor: '#fff',
-        color: '#8B0000',
-        width: '50%',
-        includeFontPadding: false
-    },
     instructionContainer: {
         flexDirection: 'row',
         alignItems: 'center',
+        gap: 5,
+    },
+    input: {
+        flex: 1,
+        fontFamily: theme.fonts.Medium,
+        color: theme.colors.theme_dark,
+        padding: 0,
+        margin: 0,
+        ...(Platform.OS === 'web' ? { outlineStyle: 'none' } : {}),
     },
     backBtn: {
         flexDirection: 'row',
@@ -276,7 +284,20 @@ const styles = StyleSheet.create({
     itemDetails: { flex: 1, flexDirection: 'column' },
     itemHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
     itemNameRow: { flexDirection: 'row', alignItems: 'flex-start', flex: 1, gap: 6 },
-    vegDot: { width: 10, height: 10, borderRadius: 5, marginTop: 4 },
+    vegSquare: {
+        width: 16,
+        height: 16,
+        borderWidth: 1.5,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: 3,
+        marginTop: 4,
+    },
+    vegCircle: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+    },
     itemName: { color: theme.colors.text, flex: 1 },
     deleteBtn: { padding: theme.spacing.xs },
     addonsList: { marginTop: 4, marginBottom: 4, paddingLeft: 16, gap: 2 },

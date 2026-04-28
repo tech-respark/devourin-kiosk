@@ -3,9 +3,9 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
-import { theme } from '../src/styles/theme';
 import { useAppSelector } from '../src/store/hooks';
 import { selectMobileSettings } from '../src/store/userSlice';
+import { theme } from '../src/styles/theme';
 import CustomText from './CustomText';
 
 interface BottomDockProps {
@@ -33,7 +33,7 @@ export const BottomDock: React.FC<BottomDockProps> = ({
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xl }}>
                 <View style={styles.cartInfoSection}>
                     <View style={styles.cartIconContainer}>
-                        <Feather name="shopping-cart" size={theme.fontSize.headingXX} color={theme.colors.theme} />
+                        <Feather name="shopping-cart" size={theme.fontSize.headingXX} color={theme.colors.theme_dark} />
                         {itemCount > 0 && (
                             <View style={styles.badge}>
                                 <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.xsmall} color={theme.colors.white}>
@@ -43,7 +43,7 @@ export const BottomDock: React.FC<BottomDockProps> = ({
                         )}
                     </View>
                     <View style={styles.takeOutInfo}>
-                        <CustomText fontFamily={theme.fonts.SemiBold} fontSize={theme.fontSize.regular} color={theme.colors.theme}>
+                        <CustomText fontFamily={theme.fonts.SemiBold} fontSize={theme.fontSize.regular} color={theme.colors.theme_dark}>
                             Added to Cart
                         </CustomText>
                         <CustomText fontSize={theme.fontSize.small} color={theme.colors.grayDark}>
@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
         position: 'absolute',
         top: -10,
         right: -10,
-        backgroundColor: theme.colors.theme,
+        backgroundColor: theme.colors.theme_dark,
         borderRadius: theme.border.full,
         minWidth: 22,
         height: 22,

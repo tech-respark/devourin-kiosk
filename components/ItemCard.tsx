@@ -1,7 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
-import { Image } from 'expo-image';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { theme } from '../src/styles/theme';
 import CustomText from './CustomText';
@@ -85,8 +85,8 @@ export const ItemCard: React.FC<ItemCardProps> = ({
                         >
                             {name}
                         </CustomText>
-                        <View style={[styles.vegSquare, { borderColor: isVeg ? theme.colors.success : theme.colors.theme }]}>
-                            <View style={[styles.vegCircle, { backgroundColor: isVeg ? theme.colors.success : theme.colors.theme }]} />
+                        <View style={[styles.vegSquare, { borderColor: isVeg ? theme.colors.success : theme.colors.error }]}>
+                            <View style={[styles.vegCircle, { backgroundColor: isVeg ? theme.colors.success : theme.colors.error }]} />
                         </View>
                     </View>
                 </View>

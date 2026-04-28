@@ -56,6 +56,12 @@ export default function ModeSelectionScreen() {
     }, []);
 
     const handleSelectMode = (mode: string) => {
+        // Trigger Fullscreen on Web to provide a native kiosk experience
+        if (Platform.OS === 'web' && document.documentElement.requestFullscreen) {
+            document.documentElement.requestFullscreen().catch(() => {
+                console.log("Fullscreen request blocked/failed");
+            });
+        }
         router.replace('/menu');
     };
 
@@ -261,13 +267,16 @@ const styles = StyleSheet.create({
         borderRadius: 25,
         justifyContent: 'center',
         alignItems: 'center',
-        shadowColor: "#000",
-        ...(Platform.OS === 'web' ? {
-            boxShadow: '0px 15px 20px rgba(0, 0, 0, 0.2)'
-        } : {
-            shadowOffset: { width: 0, height: 15 },
-            shadowOpacity: 0.2,
-            shadowRadius: 20,
+        ...Platform.select({
+            web: {
+                boxShadow: '0px 15px 20px rgba(0, 0, 0, 0.2)'
+            },
+            default: {
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 15 },
+                shadowOpacity: 0.2,
+                shadowRadius: 20,
+            }
         }),
         elevation: 10,
     },

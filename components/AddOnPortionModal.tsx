@@ -1,8 +1,10 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Image } from 'expo-image';
 import React, { useEffect, useState } from 'react';
 import {
+    Platform,
     Pressable,
     ScrollView,
     StyleSheet,
@@ -211,7 +213,7 @@ export const AddOnPortionModal: React.FC<AddOnPortionModalProps> = ({ visible, i
                                 )}
                             </View>
                             <View style={styles.headerInfo}>
-                                <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.xsmall} color="#E53935" style={{ marginBottom: 4 }}>
+                                <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.xsmall} color="#D95C20" style={{ marginBottom: 4 }}>
                                 </CustomText>
                                 <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.headingXX} color="#162640" style={{ marginBottom: 6 }}>
                                     {itemName}
@@ -325,25 +327,32 @@ export const AddOnPortionModal: React.FC<AddOnPortionModalProps> = ({ visible, i
                     <View style={styles.footerModern}>
                         <View style={styles.qtyControlModern}>
                             <TouchableOpacity style={styles.qtyBtnModern} onPress={() => handleItemQty(-1)}>
-                                <Ionicons name="remove" size={20} color="#D13C25" />
+                                <Ionicons name="remove" size={20} color="#D95C20" />
                             </TouchableOpacity>
                             <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.large} color="#162640" style={{ width: 40, textAlign: 'center' }}>
                                 {quantity}
                             </CustomText>
                             <TouchableOpacity style={styles.qtyBtnModern} onPress={() => handleItemQty(1)}>
-                                <Ionicons name="add" size={20} color="#D13C25" />
+                                <Ionicons name="add" size={20} color="#D95C20" />
                             </TouchableOpacity>
                         </View>
 
                         <View style={styles.totalInfoModern}>
-                            <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.xsmall} color="#E53935">TOTAL AMOUNT</CustomText>
+                            <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.xsmall} color="#D95C20">TOTAL AMOUNT</CustomText>
                             <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.headingXX} color="#162640">{currency}{totalPrice.toFixed(1)}</CustomText>
                         </View>
 
-                        <TouchableOpacity style={styles.addToCartBtnModern} onPress={handleAddToCart} activeOpacity={0.85}>
-                            <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.large} color="#fff">
-                                Add to Cart
-                            </CustomText>
+                        <TouchableOpacity onPress={handleAddToCart} activeOpacity={0.85}>
+                            <LinearGradient
+                                colors={['#DD7E33', '#D95C20']}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 0 }}
+                                style={styles.addToCartBtnModern}
+                            >
+                                <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.large} color="#fff">
+                                    Add to Cart
+                                </CustomText>
+                            </LinearGradient>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -441,8 +450,8 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
     },
     portionCardActive: {
-        borderColor: '#E53935',
-        backgroundColor: '#FFF5F5',
+        borderColor: '#D95C20',
+        backgroundColor: '#FFF7ED',
     },
     radioCircle: {
         width: 20,
@@ -454,13 +463,13 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     radioCircleActive: {
-        borderColor: '#E53935',
+        borderColor: '#D95C20',
     },
     radioDot: {
         width: 10,
         height: 10,
         borderRadius: 5,
-        backgroundColor: '#E53935',
+        backgroundColor: '#D95C20',
     },
     addonGrid: {
         flexDirection: 'row',
@@ -476,10 +485,17 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#F3F4F6',
         backgroundColor: '#fff',
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.02,
-        shadowRadius: 4,
+        ...Platform.select({
+            web: {
+                boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.02)'
+            },
+            default: {
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.02,
+                shadowRadius: 4,
+            }
+        }),
         elevation: 1,
     },
     checkbox: {
@@ -492,8 +508,8 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     checkboxActive: {
-        borderColor: '#E53935',
-        backgroundColor: '#E53935',
+        borderColor: '#D95C20',
+        backgroundColor: '#D95C20',
     },
     instructionSection: {
         marginBottom: 30,
@@ -512,14 +528,15 @@ const styles = StyleSheet.create({
         fontSize: theme.fontSize.medium,
         color: '#162640',
         paddingVertical: 10,
+        ...(Platform.OS === 'web' ? { outlineStyle: 'none' } : {}),
     },
     footerModern: {
         flexDirection: 'row',
         alignItems: 'center',
         padding: 25,
-        backgroundColor: '#FFF8F8', // Light pinkish footer
+        backgroundColor: '#FFF7ED', // Light orange footer
         borderTopWidth: 1,
-        borderTopColor: '#FFE5E5',
+        borderTopColor: '#FFEDD5',
     },
     qtyControlModern: {
         flexDirection: 'row',
@@ -527,10 +544,17 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
         borderRadius: 16,
         padding: 6,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.05,
-        shadowRadius: 10,
+        ...Platform.select({
+            web: {
+                boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.05)'
+            },
+            default: {
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.05,
+                shadowRadius: 10,
+            }
+        }),
         elevation: 3,
     },
     qtyBtnModern: {
@@ -545,14 +569,20 @@ const styles = StyleSheet.create({
         marginLeft: 25,
     },
     addToCartBtnModern: {
-        backgroundColor: '#E53935',
         paddingHorizontal: 35,
         paddingVertical: 18,
         borderRadius: 18,
-        shadowColor: "#E53935",
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.3,
-        shadowRadius: 15,
+        ...Platform.select({
+            web: {
+                boxShadow: '0px 8px 15px rgba(217, 92, 32, 0.3)'
+            },
+            default: {
+                shadowColor: "#D95C20",
+                shadowOffset: { width: 0, height: 8 },
+                shadowOpacity: 0.3,
+                shadowRadius: 15,
+            }
+        }),
         elevation: 8,
     },
 });

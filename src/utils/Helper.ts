@@ -3,6 +3,22 @@ import Toast from "react-native-toast-message";
 import { store } from "../store";
 import { LOCAL_IP } from "./Constants";
 
+// Dynamic script loader for Razorpay Web
+export const loadRazorpayScript = () => {
+    return new Promise((resolve) => {
+        if (Platform.OS !== 'web' || typeof document === 'undefined') return resolve(false);
+        if ((window as any).Razorpay) return resolve(true);
+
+        const script = document.createElement('script');
+        script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+        script.id = 'razorpay-checkout-script';
+        script.async = true;
+        script.onload = () => resolve(true);
+        script.onerror = () => resolve(false);
+        document.body.appendChild(script);
+    });
+};
+
 const getHeaders = (options: RequestInit = {}) => {
     const state = store.getState();
     return {

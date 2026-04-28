@@ -225,7 +225,7 @@ const styles = StyleSheet.create({
         borderRadius: theme.border.md,
         gap: theme.spacing.xs,
     },
-    devourinLogo: { width: 150, height: 40 },
+    devourinLogo: { width: 200, height: 40 },
     mainContent: { flex: 1, alignItems: 'center', paddingTop: theme.spacing.xxxl, backgroundColor: theme.colors.background },
     sihiLogo: { width: 300, height: 200, marginBottom: theme.spacing.xxxl },
     formCard: {

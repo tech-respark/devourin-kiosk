@@ -2,6 +2,7 @@ export enum Colors {
     theme = '#f18b23',
     theme_light = '#FCF1E4',
     theme_light2 = '#fbf7f3ff',
+    theme_dark = "#D95C20",
     background = '#F5F5F5',
     card = '#162640',
     text = '#000',

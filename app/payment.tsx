@@ -14,23 +14,9 @@ import { clearCustomerDetails, selectMobileSettings } from '../src/store/userSli
 import { theme } from '../src/styles/theme';
 import { buildPluralOrderPayload } from '../src/utils/Cart';
 import { useEnvironment } from '../src/utils/Constants';
-import { makeAPIRequest } from '../src/utils/Helper';
+import { loadRazorpayScript, makeAPIRequest } from '../src/utils/Helper';
 
 type LoaderState = 'idle' | 'payment' | 'placing' | 'success' | 'error';
-
-// Dynamic script loader for Razorpay Web
-const loadRazorpayScript = () => {
-    return new Promise((resolve) => {
-        if (typeof document === 'undefined') return resolve(false);
-        if ((window as any).Razorpay) return resolve(true);
-
-        const script = document.createElement('script');
-        script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-        script.onload = () => resolve(true);
-        script.onerror = () => resolve(false);
-        document.body.appendChild(script);
-    });
-};
 
 export default function PaymentSelection() {
     const router = useRouter();

@@ -190,13 +190,16 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         zIndex: 10,
-        shadowColor: "#4CAF50",
-        ...(Platform.OS === 'web' ? {
-            boxShadow: '0px 10px 20px rgba(76, 175, 80, 0.3)'
-        } : {
-            shadowOffset: { width: 0, height: 10 },
-            shadowOpacity: 0.3,
-            shadowRadius: 20,
+        ...Platform.select({
+            web: {
+                boxShadow: '0px 10px 20px rgba(76, 175, 80, 0.3)'
+            },
+            default: {
+                shadowColor: "#4CAF50",
+                shadowOffset: { width: 0, height: 10 },
+                shadowOpacity: 0.3,
+                shadowRadius: 20,
+            }
         }),
         elevation: 10,
     },
@@ -244,13 +247,16 @@ const styles = StyleSheet.create({
         borderRadius: 20,
         alignItems: 'center',
         justifyContent: 'center',
-        shadowColor: "#D95C20",
-        ...(Platform.OS === 'web' ? {
-            boxShadow: '0px 8px 15px rgba(217, 92, 32, 0.2)'
-        } : {
-            shadowOffset: { width: 0, height: 8 },
-            shadowOpacity: 0.2,
-            shadowRadius: 15,
+        ...Platform.select({
+            web: {
+                boxShadow: '0px 8px 15px rgba(217, 92, 32, 0.2)'
+            },
+            default: {
+                shadowColor: "#D95C20",
+                shadowOffset: { width: 0, height: 8 },
+                shadowOpacity: 0.2,
+                shadowRadius: 15,
+            }
         }),
         elevation: 8,
     },
@@ -275,10 +281,17 @@ const styles = StyleSheet.create({
         borderWidth: 2,
         borderColor: theme.colors.theme,
         marginTop: 15,
-        shadowColor: theme.colors.theme,
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.1,
-        shadowRadius: 20,
+        ...Platform.select({
+            web: {
+                boxShadow: `0px 10px 20px ${theme.colors.theme}1A` // 1A is ~0.1 opacity
+            },
+            default: {
+                shadowColor: theme.colors.theme,
+                shadowOffset: { width: 0, height: 10 },
+                shadowOpacity: 0.1,
+                shadowRadius: 20,
+            }
+        }),
         elevation: 5,
     },
 });
