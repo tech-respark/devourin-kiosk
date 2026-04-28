@@ -48,10 +48,11 @@ export default function PaymentSelection() {
         setLoaderState('success');
         setLoaderText('Order Successful!');
 
-        // Convert Razorpay response to FormData as required by the callback API
+        // Convert Razorpay response to x-www-form-urlencoded string
         let verifyPayload = "razorpay_payment_id=" + data.razorpay_payment_id +
             "&razorpay_order_id=" + data.razorpay_order_id +
             "&razorpay_signature=" + data.razorpay_signature;
+
         try {
             const url = `${apiBaseUrl}redirectrazorpay`;
             await makeAPIRequest(url, verifyPayload, 'POST', { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }, undefined, true, undefined, false);
@@ -61,7 +62,10 @@ export default function PaymentSelection() {
 
         dispatch(clearCart());
         dispatch(clearCustomerDetails());
-        router.replace('/confirmation');
+        
+        // Pass the actual order ID from Razorpay response to confirmation screen
+        const orderId = data?.razorpay_order_id || '';
+        router.replace({ pathname: '/confirmation', params: { orderId } });
     };
 
     const handleFailure = (error: any) => {

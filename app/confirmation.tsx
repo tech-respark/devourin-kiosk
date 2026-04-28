@@ -1,19 +1,52 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useRef } from 'react';
 import { Animated, Image, Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import CustomText from '../components/CustomText';
 import { theme } from '../src/styles/theme';
+import { useEnvironment } from '../src/utils/Constants';
+import { makeAPIRequest } from '../src/utils/Helper';
+
+// For development, use your machine's IP (e.g. http://192.168.10.176:7009) instead of localhost for Android
+const getLocalPrinterBaseUrl = () => {
+    if (Platform.OS === 'web') return 'http://localhost:7009';
+    if (Platform.OS === 'android') return 'http://10.0.2.2:7009';
+    return 'http://127.0.0.1:7009';
+};
+
+const PRINTER_URL = `${getLocalPrinterBaseUrl()}/devourin-printing/v1/print`;
 
 export default function ConfirmationScreen() {
     const router = useRouter();
+    const params = useLocalSearchParams();
+    const orderId = params.orderId as string;
+    const { apiBaseUrl } = useEnvironment();
+
     const scaleAnim = useRef(new Animated.Value(0)).current;
     const opacityAnim = useRef(new Animated.Value(0)).current;
     const [seconds, setSeconds] = React.useState(5);
+    const printAttempted = useRef(false);
 
     useEffect(() => {
+        const handlePrint = async () => {
+            if (!orderId || printAttempted.current) return;
+            printAttempted.current = true;
+
+            try {
+                const url = `${apiBaseUrl}qsrkotandbillprintdata?id=${orderId}`;
+                const printData = await makeAPIRequest(url, null, 'GET');
+                if (printData) {
+                    await makeAPIRequest(PRINTER_URL, printData, 'POST');
+                }
+            } catch (err) {
+                console.error("Print flow failed:", err);
+            }
+        };
+
+        handlePrint();
+
         // Animation sequence
         Animated.parallel([
             Animated.spring(scaleAnim, {
@@ -75,15 +108,15 @@ export default function ConfirmationScreen() {
                     </View>
                 </Animated.View>
 
-                <TouchableOpacity 
-                    activeOpacity={0.8} 
-                    onPress={() => router.replace('/mode')} 
+                <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => router.replace('/mode')}
                     style={styles.btnWrapper}
                 >
-                    <LinearGradient 
-                        colors={['#DD7E33', '#D95C20']} 
-                        start={{ x: 0, y: 0 }} 
-                        end={{ x: 1, y: 0 }} 
+                    <LinearGradient
+                        colors={['#DD7E33', '#D95C20']}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
                         style={styles.homeBtn}
                     >
                         <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.large} color="#fff">
