@@ -88,10 +88,13 @@ export default function ConfirmationScreen() {
         return () => clearInterval(timer);
     }, []);
 
-    // Watch for countdown completion
     useEffect(() => {
         if (seconds === 0) {
-            router.replace('/mode');
+            if (Platform.OS === 'web') {
+                window.location.replace('/mode');
+            } else {
+                router.replace('/mode');
+            }
         }
     }, [seconds]);
 
@@ -141,7 +144,13 @@ export default function ConfirmationScreen() {
 
                 <TouchableOpacity
                     activeOpacity={0.8}
-                    onPress={() => router.replace('/mode')}
+                    onPress={() => {
+                        if (Platform.OS === 'web') {
+                            window.location.replace('/mode');
+                        } else {
+                            router.replace('/mode');
+                        }
+                    }}
                     style={styles.btnWrapper}
                 >
                     <LinearGradient
