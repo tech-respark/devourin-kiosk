@@ -90,11 +90,7 @@ export default function ConfirmationScreen() {
 
     useEffect(() => {
         if (seconds === 0) {
-            if (Platform.OS === 'web') {
-                window.location.replace('/mode');
-            } else {
-                router.replace('/mode');
-            }
+            router.replace('/mode');
         }
     }, [seconds]);
 
@@ -144,13 +140,7 @@ export default function ConfirmationScreen() {
 
                 <TouchableOpacity
                     activeOpacity={0.8}
-                    onPress={() => {
-                        if (Platform.OS === 'web') {
-                            window.location.replace('/mode');
-                        } else {
-                            router.replace('/mode');
-                        }
-                    }}
+                    onPress={() => router.replace('/mode')}
                     style={styles.btnWrapper}
                 >
                     <LinearGradient
