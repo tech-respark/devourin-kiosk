@@ -231,11 +231,27 @@ export const buildPluralOrderPayload = (
     const orderITems = cartItems.map(item => {
         const itemPrice = item.price;
         const itemQty = item.quantity;
-        const addOnTotal = (item.addOns || []).reduce((a, ad) => a + ad.price * ad.quantity, 0);
+        const baseItemTotal = itemPrice * itemQty;
 
-        // Calculate Gst for this item
-        const taxRate = (item.cgst || 0) + (item.sgst || 0) + (item.igst || 0) + (item.vat || 0);
-        const itemTax = ((itemPrice * itemQty) + addOnTotal) * (taxRate / 100);
+        // Addons base total
+        const addOnBaseTotal = (item.addOns || []).reduce((a, ad) => a + ad.price * ad.quantity, 0);
+
+        // Taxes for Item
+        const itemCgst = (baseItemTotal * (item.cgst || 0)) / 100;
+        const itemSgst = (baseItemTotal * (item.sgst || 0)) / 100;
+        const itemIgst = (baseItemTotal * (item.igst || 0)) / 100;
+        const itemVat = (baseItemTotal * (item.vat || 0)) / 100;
+        const itemTotalTax = itemCgst + itemSgst + itemIgst + itemVat;
+
+        // Taxes for Addons
+        const addonTaxTotal = (item.addOns || []).reduce((acc, a) => {
+            const addonBase = a.price * a.quantity;
+            const a_cgst = (addonBase * (a.cgst || 0)) / 100;
+            const a_sgst = (addonBase * (a.sgst || 0)) / 100;
+            const a_igst = (addonBase * (a.igst || 0)) / 100;
+            const a_vat = (addonBase * (a.vat || 0)) / 100;
+            return acc + a_cgst + a_sgst + a_igst + a_vat;
+        }, 0);
 
         return {
             id: null,
@@ -268,7 +284,7 @@ export const buildPluralOrderPayload = (
             gms: 0,
             discount: 0,
             pc: 0,
-            sc: item.sc || 0,
+            sc: 0,
             dc: 0,
             attributeName: item.attributeName || "null",
             it: item.isVeg ? 1 : 2,
@@ -286,13 +302,14 @@ export const buildPluralOrderPayload = (
             surCharge: 0,
             vat: item.vat || 0,
             unit: "Qty",
-            itemTotal: itemPrice * itemQty,
-            itemTax: Number(itemTax.toFixed(2)),
-            addonTotal: addOnTotal
+            itemTotal: baseItemTotal,
+            itemTax: Number((itemTotalTax + addonTaxTotal).toFixed(2)),
+            addonTotal: addOnBaseTotal,
+            itemSc: 0
         };
     });
 
-    const totalWithTax = orderITems.reduce((acc, it) => acc + it.itemTotal + it.addonTotal + it.itemTax, 0);
+    const totalWithTax = orderITems.reduce((acc, it: any) => acc + it.itemTotal + it.addonTotal + it.itemTax, 0);
 
     return {
         branchId: Number(branchId),
@@ -306,7 +323,7 @@ export const buildPluralOrderPayload = (
         currentStatus: {
             id: null,
             orderId: null,
-            status: "ORDER_PLACED",
+            status: "QSR_KOT_BILL_SETTLED",
             statusTime: "",
             remark: null,
             staffId: null

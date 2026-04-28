@@ -8,18 +8,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import { useDispatch, useSelector } from 'react-redux';
 import CustomText from '../components/CustomText';
-import { clearCart, selectCartItems, selectCartSubtotal } from '../src/store/cartSlice';
+import { TaxBreakdownModal } from '../components/TaxBreakdownModal';
+import { clearCart, selectCartItems, selectCartTotalWithTaxes } from '../src/store/cartSlice';
 import { clearCustomerDetails } from '../src/store/userSlice';
 import { theme } from '../src/styles/theme';
 import { buildPluralOrderPayload } from '../src/utils/Cart';
 import { useEnvironment } from '../src/utils/Constants';
 import { makeAPIRequest } from '../src/utils/Helper';
-
-const PAYMENT_METHODS = [
-    { id: 'upi', name: 'UPI / QR', icon: 'qr-code', disabled: false, type: 'material', txn: 'UPI' },
-    { id: 'card', name: 'Credit / Debit', icon: 'credit-card', disabled: true, type: 'material', txn: 'Card' },
-    { id: 'cash', name: 'Cash Counter', icon: 'payments', disabled: true, type: 'material', txn: 'Cash' },
-];
 
 type LoaderState = 'idle' | 'payment' | 'placing' | 'success' | 'error';
 
@@ -41,25 +36,29 @@ export default function PaymentSelection() {
     const router = useRouter();
     const dispatch = useDispatch();
     const { apiBaseUrl } = useEnvironment();
-    const totalPayable = useSelector(selectCartSubtotal);
+    const totalPayable = useSelector(selectCartTotalWithTaxes);
     const cartItems = useSelector(selectCartItems);
 
-    const [selectedMethod, setSelectedMethod] = useState('upi');
     const [loaderState, setLoaderState] = useState<LoaderState>('idle');
     const [loaderText, setLoaderText] = useState('');
+    const [showTaxModal, setShowTaxModal] = useState(false);
 
     const handleSuccess = async (data: any) => {
         console.log("Payment Success Handler:", data);
         setLoaderState('success');
         setLoaderText('Order Successful!');
 
-        // Printer list check (maintained from user's manual addition)
+        // Convert Razorpay response to FormData as required by the callback API
+        const formData = new FormData();
+        formData.append('razorpay_order_id', data.razorpay_order_id);
+        formData.append('razorpay_payment_id', data.razorpay_payment_id);
+        formData.append('razorpay_signature', data.razorpay_signature);
+        console.log(formData)
         try {
-            const url = 'http://192.168.10.176:7009/devourin-printing/v1/listprinters';
-            const printerData = await makeAPIRequest(url, null, 'GET');
-            console.log("HELLO - Printers:", printerData);
-        } catch (err) {
-            console.log("Printer check skipped/failed");
+            const url = `${apiBaseUrl}redirectrazorpay`;
+            await makeAPIRequest(url, formData, 'POST', { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
+        } catch (error) {
+            console.error("Razorpay Callback API Error:", error);
         }
 
         dispatch(clearCart());
@@ -84,8 +83,9 @@ export default function PaymentSelection() {
 
         try {
             const payload = buildPluralOrderPayload(cartItems as any);
+            console.log(JSON.stringify(payload))
             const headers = { headers: { 'Content-Type': 'application/json', 'user': 'sadmin1234', 'pwd': 'sadmin1234' } }
-
+            console.log(`${apiBaseUrl}validateOrder`)
             const validateResp = await makeAPIRequest(`${apiBaseUrl}validateOrder`, payload, 'POST', headers);
 
             if (validateResp && validateResp.verified) {
@@ -159,54 +159,23 @@ export default function PaymentSelection() {
                     <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.heading} style={styles.totalLabel}>
                         Total Payable Amount
                     </CustomText>
-                    <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.headingXXXX} color="#D13C25" style={styles.totalValue}>
-                        ₹{totalPayable.toFixed(0)}
-                    </CustomText>
-
-                    <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.heading} style={styles.selectTitle}>
-                        Select Payment Method
-                    </CustomText>
-
-                    {/* <View style={styles.methodsRow}>
-                        {PAYMENT_METHODS.map(method => {
-                            const isSelected = selectedMethod === method.id;
-                            const isDisabled = method.disabled;
-
-                            return (
-                                <TouchableOpacity
-                                    key={method.id}
-                                    disabled={isDisabled}
-                                    style={[
-                                        styles.methodCard,
-                                        isSelected && styles.methodCardSelected,
-                                        isDisabled && styles.methodCardDisabled,
-                                    ]}
-                                    onPress={() => setSelectedMethod(method.id)}
-                                >
-                                    <View style={[styles.iconBox, isSelected && styles.iconBoxSelected]}>
-                                        <MaterialIcons name={method.icon as any} size={32} color={isDisabled ? '#CCC' : '#333'} />
-                                    </View>
-                                    <CustomText
-                                        fontFamily={theme.fonts.Medium}
-                                        fontSize={theme.fontSize.regular}
-                                        color={isDisabled ? '#CCC' : isSelected ? theme.colors.text : theme.colors.grayDark}
-                                        style={{ textAlign: 'center' }}
-                                    >
-                                        {method.name}
-                                    </CustomText>
-                                </TouchableOpacity>
-                            );
-                        })}
-                    </View> */}
+                    <View style={styles.totalRowContainer}>
+                        <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.headingXXXX} color="#D13C25" style={styles.totalValue}>
+                            ₹{totalPayable.toFixed(2)}
+                        </CustomText>
+                        <TouchableOpacity onPress={() => setShowTaxModal(true)} style={styles.infoIcon}>
+                            <Ionicons name="information-circle-outline" size={32} color={theme.colors.grayDark} />
+                        </TouchableOpacity>
+                    </View>
 
                     {/* Pay Button */}
                     <TouchableOpacity
                         onPress={placeOrder}
                         activeOpacity={0.85}
-                        disabled={!selectedMethod || isLoading}
+                        disabled={isLoading}
                     >
                         <LinearGradient
-                            colors={selectedMethod ? ['#DD7E33', '#D95C20'] : ['#CCC', '#CCC']}
+                            colors={['#DD7E33', '#D95C20']}
                             start={{ x: 0, y: 0 }}
                             end={{ x: 1, y: 0 }}
                             style={styles.payButton}
@@ -232,6 +201,11 @@ export default function PaymentSelection() {
                     </CustomText>
                 </View>
             )}
+            <TaxBreakdownModal
+                visible={showTaxModal}
+                onClose={() => setShowTaxModal(false)}
+                cartItems={cartItems}
+            />
         </SafeAreaView>
     );
 }
@@ -270,7 +244,17 @@ const styles = StyleSheet.create({
         boxShadow: '0px 10px 30px 0px rgba(0,0,0,0.07)',
     },
     totalLabel: { color: '#162640', marginBottom: theme.spacing.md },
-    totalValue: { marginBottom: theme.spacing.xxxl },
+    totalRowContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: theme.spacing.xxxl,
+        gap: 12
+    },
+    totalValue: { marginBottom: 0 },
+    infoIcon: {
+        padding: 4,
+    },
     selectTitle: { color: '#162640', marginBottom: theme.spacing.xl },
     methodsRow: {
         flexDirection: 'row',

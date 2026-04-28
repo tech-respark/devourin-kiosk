@@ -140,4 +140,25 @@ export const selectCartSubtotal = (state: RootState) =>
         return acc + (item.price * item.quantity) + addonTotal;
     }, 0);
 
+export const selectCartTotalWithTaxes = (state: RootState) => {
+    return state.cart.cartItems.reduce((acc, item) => {
+        const itemPrice = item.price * item.quantity;
+        const cgst = (itemPrice * (item.cgst || 0)) / 100;
+        const sgst = (itemPrice * (item.sgst || 0)) / 100;
+        const igst = (itemPrice * (item.igst || 0)) / 100;
+        const vat = (itemPrice * (item.vat || 0)) / 100;
+
+        const addonTotal = (item.addOns || []).reduce((a, addon) => {
+            const addonPrice = addon.price * addon.quantity;
+            const a_cgst = (addonPrice * (addon.cgst || 0)) / 100;
+            const a_sgst = (addonPrice * (addon.sgst || 0)) / 100;
+            const a_igst = (addonPrice * (addon.igst || 0)) / 100;
+            const a_vat = (addonPrice * (addon.vat || 0)) / 100;
+            return a + addonPrice + a_cgst + a_sgst + a_igst + a_vat;
+        }, 0);
+
+        return acc + itemPrice + cgst + sgst + igst + vat + addonTotal;
+    }, 0);
+};
+
 export default cartSlice.reducer;

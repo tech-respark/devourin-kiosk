@@ -1,15 +1,13 @@
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useState } from 'react';
 import {
-    FlatList,
-    Modal,
     Pressable,
     ScrollView,
     StyleSheet,
     TextInput,
     TouchableOpacity,
-    View,
+    View
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { useDispatch, useSelector } from 'react-redux';
@@ -63,10 +61,10 @@ export const AddOnPortionModal: React.FC<AddOnPortionModalProps> = ({ visible, i
         const organized = addOnItems.reduce((acc: any[], addonItem: any) => {
             const addonItemId = String(addonItem.itemId || addonItem.itemid || '');
             if (addonItemId !== targetId) return acc;
-            
+
             const matchingCategory = addOnCategories.find((cat: any) => String(cat.id) === String(addonItem.addonCatId));
             const categoryName = addonItem.category || matchingCategory?.name || 'Extra Add-ons';
-            
+
             const existing = acc.find((c: any) => c.title === categoryName);
             if (existing) {
                 existing.data.push(addonItem);
@@ -191,19 +189,13 @@ export const AddOnPortionModal: React.FC<AddOnPortionModalProps> = ({ visible, i
                     <View style={styles.header}>
                         <View style={styles.headerRow}>
                             <View style={[styles.imageBox, { backgroundColor: '#FFF7ED' }]}>
-                                <Ionicons name="pizza-outline" size={80} color="#D95C20" />
-                                <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.xsmall} color="#D95C20" style={{ marginTop: 4 }}>IMAGE</CustomText>
+                                <MaterialCommunityIcons name="silverware-fork-knife" size={80} color="#D95C20" />
                             </View>
-
                             <View style={styles.headerInfo}>
                                 <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.xsmall} color="#E53935" style={{ marginBottom: 4 }}>
-                                    BESTSELLER
                                 </CustomText>
                                 <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.headingXX} color="#162640" style={{ marginBottom: 6 }}>
                                     {itemName}
-                                </CustomText>
-                                <CustomText fontSize={theme.fontSize.small} color="#666" style={{ marginBottom: 15 }} numberOfLines={2}>
-                                    Classic delight with premium ingredients and hand-crafted dough.
                                 </CustomText>
 
                                 <View style={styles.priceRow}>
@@ -222,8 +214,8 @@ export const AddOnPortionModal: React.FC<AddOnPortionModalProps> = ({ visible, i
                         </View>
                     </View>
 
-                    <ScrollView 
-                        style={styles.body} 
+                    <ScrollView
+                        style={styles.body}
                         contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}
                         showsVerticalScrollIndicator={false}
                     >

@@ -62,10 +62,15 @@ export const makeAPIRequest = async (
         };
 
         if (body && (method === "POST" || method === "PUT")) {
-            fetchOptions.body = JSON.stringify(body);
+            if (body instanceof FormData) {
+                fetchOptions.body = body;
+            } else {
+                fetchOptions.body = JSON.stringify(body);
+            }
         }
         const response = await fetch(url, fetchOptions);
         if (!response.ok) {
+            console.log(url)
             if (showToast) Toast.show({ type: 'error', text1: customErrorMsg || "API Request Failed" });
             return null;
         }

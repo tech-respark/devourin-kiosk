@@ -12,6 +12,15 @@ export const useInitialDataFetch = () => {
     const { apiBaseUrl } = useEnvironment();
     const [loading, setLoading] = useState<boolean>(false);
 
+    const getPrinterStatus = async () => {
+        // try {
+        //     const url = 'http://192.168.10.176:7009/devourin-printing/v1/listprinters';
+        //     const printerData = await makeAPIRequest(url, null, 'GET');
+        // } catch (err) {
+        //     console.log("Printer check skipped/failed");
+        // }
+    };
+
     // Fetch Categories
     const getCategories = async () => {
         const url = `${apiBaseUrl}getItemCategories`;
@@ -63,6 +72,7 @@ export const useInitialDataFetch = () => {
                 getMenuItems(categories),
                 getAddOnItems(),
                 getAddOnCategories(),
+                getPrinterStatus()
             ]);
         } catch (error) {
             Toast.show({ text1: NETWORK_ERROR, type: 'error' });
