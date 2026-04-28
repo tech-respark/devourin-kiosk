@@ -1,5 +1,6 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { Image } from 'expo-image';
 import React, { useEffect, useState } from 'react';
 import {
     Pressable,
@@ -12,7 +13,8 @@ import {
 import Toast from 'react-native-toast-message';
 import { useDispatch, useSelector } from 'react-redux';
 import { addToCartWithOptions, CartAddon } from '../src/store/cartSlice';
-import { selectAddOnCategories, selectAddOnItems } from '../src/store/menuSlice';
+import { selectAddOnCategories, selectAddOnItems, selectItemImages } from '../src/store/menuSlice';
+import { selectMobileSettings } from '../src/store/userSlice';
 import { theme } from '../src/styles/theme';
 import CustomText from './CustomText';
 
@@ -25,7 +27,10 @@ interface AddOnPortionModalProps {
 export const AddOnPortionModal: React.FC<AddOnPortionModalProps> = ({ visible, item, onClose }) => {
     const dispatch = useDispatch();
     const addOnItems = useSelector(selectAddOnItems);
+    const itemImages = useSelector(selectItemImages);
     const addOnCategories = useSelector(selectAddOnCategories);
+    const mobileSettings = useSelector(selectMobileSettings);
+    const currency = mobileSettings?.['currency_symbol'] || '₹';
 
     // Default to first portion if item has portions
     const [selectedPortion, setSelectedPortion] = useState<any>(item?.portions?.[0] ?? item);
@@ -58,16 +63,25 @@ export const AddOnPortionModal: React.FC<AddOnPortionModalProps> = ({ visible, i
     useEffect(() => {
         if (!item) return;
         const targetId = String(item.itemId);
+        const targetPortionId = String(selectedPortion?.customAttributeId ?? '');
+
         const organized = addOnItems.reduce((acc: any[], addonItem: any) => {
             const addonItemId = String(addonItem.itemId || addonItem.itemid || '');
-            if (addonItemId !== targetId) return acc;
+            const addonPortionId = String(addonItem.portionId || addonItem.portionid || addonItem.customAttributeId || '');
+            const isForAll = addonItem.forAll === 1 || addonItem.forall === 1;
+
+            const isMatching = (addonItemId === targetId) || isForAll || (addonPortionId !== '' && addonPortionId === targetPortionId);
+
+            if (!isMatching) return acc;
 
             const matchingCategory = addOnCategories.find((cat: any) => String(cat.id) === String(addonItem.addonCatId));
             const categoryName = addonItem.category || matchingCategory?.name || 'Extra Add-ons';
 
             const existing = acc.find((c: any) => c.title === categoryName);
             if (existing) {
-                existing.data.push(addonItem);
+                if (!existing.data.find((a: any) => a.addonId === addonItem.addonId)) {
+                    existing.data.push(addonItem);
+                }
             } else {
                 acc.push({
                     title: categoryName,
@@ -79,7 +93,7 @@ export const AddOnPortionModal: React.FC<AddOnPortionModalProps> = ({ visible, i
             return acc;
         }, []);
         setOrganizedAddOn(organized);
-    }, [item?.itemId, addOnItems, addOnCategories]);
+    }, [item?.itemId, selectedPortion?.customAttributeId, addOnItems, addOnCategories]);
 
     const handleAddonChange = (addon: any, change: number, catIndex: number) => {
         setSelectedAddons((prev) => {
@@ -180,6 +194,7 @@ export const AddOnPortionModal: React.FC<AddOnPortionModalProps> = ({ visible, i
 
     if (!visible || !item) return null;
 
+    console.log(item)
     return (
         <View style={{ ...StyleSheet.absoluteFillObject, zIndex: 99999 }}>
             <View style={styles.overlay}>
@@ -188,8 +203,12 @@ export const AddOnPortionModal: React.FC<AddOnPortionModalProps> = ({ visible, i
                     {/* Header with Image & Title */}
                     <View style={styles.header}>
                         <View style={styles.headerRow}>
-                            <View style={[styles.imageBox, { backgroundColor: '#FFF7ED' }]}>
-                                <MaterialCommunityIcons name="silverware-fork-knife" size={80} color="#D95C20" />
+                            <View style={[styles.imageBox, { backgroundColor: '#FFF7ED', overflow: 'hidden' }]}>
+                                {itemImages?.[item.itemId] ? (
+                                    <Image source={{ uri: itemImages[item.itemId] }} style={styles.modalImage} resizeMode="cover" />
+                                ) : (
+                                    <MaterialCommunityIcons name="silverware-fork-knife" size={80} color="#D95C20" />
+                                )}
                             </View>
                             <View style={styles.headerInfo}>
                                 <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.xsmall} color="#E53935" style={{ marginBottom: 4 }}>
@@ -203,7 +222,7 @@ export const AddOnPortionModal: React.FC<AddOnPortionModalProps> = ({ visible, i
                                         <View style={[styles.vegCircle, { backgroundColor: item.it === 1 ? theme.colors.success : theme.colors.theme }]} />
                                     </View>
                                     <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.headingXX} color="#162640">
-                                        ₹{portionPrice}
+                                        {currency}{portionPrice}
                                     </CustomText>
                                 </View>
                             </View>
@@ -245,7 +264,7 @@ export const AddOnPortionModal: React.FC<AddOnPortionModalProps> = ({ visible, i
                                                 <CustomText fontFamily={isSelected ? theme.fonts.SemiBold : theme.fonts.Medium} fontSize={theme.fontSize.small} color="#333" style={{ flex: 1, marginLeft: 8 }}>
                                                     {portion.attributeName}
                                                 </CustomText>
-                                                <CustomText color="#666" fontSize={theme.fontSize.small}>₹{portionDisplayPrice}</CustomText>
+                                                <CustomText color="#666" fontSize={theme.fontSize.small}>{currency}{portionDisplayPrice}</CustomText>
                                             </TouchableOpacity>
                                         );
                                     })}
@@ -277,7 +296,7 @@ export const AddOnPortionModal: React.FC<AddOnPortionModalProps> = ({ visible, i
                                                     {addon.addon}
                                                 </CustomText>
                                                 <CustomText fontSize={theme.fontSize.xsmall} color="#666">
-                                                    + ₹{addon.price}
+                                                    + {currency}{addon.price}
                                                 </CustomText>
                                             </TouchableOpacity>
                                         );
@@ -318,7 +337,7 @@ export const AddOnPortionModal: React.FC<AddOnPortionModalProps> = ({ visible, i
 
                         <View style={styles.totalInfoModern}>
                             <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.xsmall} color="#E53935">TOTAL AMOUNT</CustomText>
-                            <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.headingXX} color="#162640">₹{totalPrice.toFixed(1)}</CustomText>
+                            <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.headingXX} color="#162640">{currency}{totalPrice.toFixed(1)}</CustomText>
                         </View>
 
                         <TouchableOpacity style={styles.addToCartBtnModern} onPress={handleAddToCart} activeOpacity={0.85}>
@@ -365,6 +384,10 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         marginRight: 25,
+    },
+    modalImage: {
+        width: '100%',
+        height: '100%',
     },
     headerInfo: {
         flex: 1,

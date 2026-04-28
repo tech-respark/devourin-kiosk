@@ -2,17 +2,19 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import SimpleLineIcons from '@expo/vector-icons/SimpleLineIcons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { FlatList, Image, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import { Image } from 'expo-image';
+import { FlatList, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
 import { AddOnPortionModal } from '../components/AddOnPortionModal';
 import { BottomDock } from '../components/BottomDock';
+import { CancelOrderModal } from '../components/CancelOrderModal';
 import CustomText from '../components/CustomText';
 import { ItemCard } from '../components/ItemCard';
 import { addToCart, clearCart, decrementFromCart, selectCartItems, selectCartSubtotal } from '../src/store/cartSlice';
-import { selectAddOnItems, selectOrganisedMenuItems } from '../src/store/menuSlice';
+import { selectAddOnItems, selectOrganisedMenuItems, selectItemImages } from '../src/store/menuSlice';
+import { selectMobileSettings } from '../src/store/userSlice';
 import { theme } from '../src/styles/theme';
-import { CancelOrderModal } from '../components/CancelOrderModal';
 
 export default function MenuDashboard() {
     const dispatch = useDispatch();
@@ -21,6 +23,9 @@ export default function MenuDashboard() {
     const cartItems = useSelector(selectCartItems);
     const cartSubtotal = useSelector(selectCartSubtotal);
     const addOnItems = useSelector(selectAddOnItems);
+    const mobileSettings = useSelector(selectMobileSettings);
+    const itemImages = useSelector(selectItemImages);
+    const currency = mobileSettings?.['currency_symbol'] || '₹';
 
     const [activeCategory, setActiveCategory] = useState<string | number | undefined>(organizedMenu[0]?.id);
     const [selectedItem, setSelectedItem] = useState<any>(null);
@@ -42,7 +47,7 @@ export default function MenuDashboard() {
         ...cat.subcategories.flatMap((sc: any) => sc.items)
     ]);
 
-    const itemsToDisplay = searchQuery.trim() 
+    const itemsToDisplay = searchQuery.trim()
         ? allItems.filter(item => item.name.toLowerCase().includes(searchQuery.toLowerCase()))
         : (currentCategory ? [
             ...currentCategory.items,
@@ -99,17 +104,29 @@ export default function MenuDashboard() {
                 {/* Top Header */}
                 <View style={styles.header}>
                     <View style={styles.searchContainer}>
-                        <Ionicons name='search' size={theme.fontSize.heading} color={theme.colors.grayDark} />
+                        <Ionicons name='search' size={theme.fontSize.headingX} color={theme.colors.grayDark} />
                         <TextInput
                             style={styles.searchInput}
                             placeholder="Search for items..."
                             placeholderTextColor={'gray'}
                             value={searchQuery}
-                            onChangeText={setSearchQuery}
+                            onChangeText={(text) => {
+                                setSearchQuery(text);
+                                if (text.trim().length > 0) {
+                                    setActiveCategory(undefined);
+                                } else if (organizedMenu.length > 0) {
+                                    setActiveCategory(organizedMenu[0].id);
+                                }
+                            }}
                         />
                         {searchQuery.length > 0 && (
-                            <TouchableOpacity onPress={() => setSearchQuery('')}>
-                                <Ionicons name='close-circle' size={24} color={theme.colors.grayDark} />
+                            <TouchableOpacity onPress={() => {
+                                setSearchQuery('');
+                                if (organizedMenu.length > 0) {
+                                    setActiveCategory(organizedMenu[0].id);
+                                }
+                            }}>
+                                <Ionicons name='close' size={theme.fontSize.heading} color={theme.colors.grayDark} />
                             </TouchableOpacity>
                         )}
                     </View>
@@ -129,10 +146,13 @@ export default function MenuDashboard() {
                                     <TouchableOpacity
                                         key={cat.id}
                                         style={[styles.categoryPill, isActive && styles.categoryPillActive]}
-                                        onPress={() => setActiveCategory(cat.id)}
+                                        onPress={() => {
+                                            setActiveCategory(cat.id);
+                                            setSearchQuery('');
+                                        }}
                                     >
                                         <View style={[styles.categoryIconBg, isActive && styles.categoryIconBgActive]}>
-                                            <SimpleLineIcons name='cup' size={theme.fontSize.headingXX} color={isActive ? theme.colors.theme : 'gray'} />
+                                            <SimpleLineIcons name='cup' size={theme.fontSize.headingX} color={isActive ? theme.colors.theme : 'gray'} />
                                         </View>
                                         <CustomText
                                             fontFamily={theme.fonts.Medium}
@@ -164,8 +184,10 @@ export default function MenuDashboard() {
                                 <ItemCard
                                     name={item.name}
                                     price={item.salePrice !== 0 ? item.salePrice : item.price}
+                                    currency={currency}
                                     isVeg={item.it === 1}
                                     imageColor={item.imageColor || '#FCF1E4'}
+                                    imageUrl={itemImages?.[item.itemId]}
                                     quantity={getItemQuantity(item.itemId)}
                                     hasAddOnOrPortions={hasAddOnOrPortions(item)}
                                     maxWidth={theme.device.isTablet ? '31.5%' : '48.5%'}
@@ -193,7 +215,7 @@ export default function MenuDashboard() {
                 item={selectedItem}
                 onClose={() => { setShowAddonModal(false); setSelectedItem(null); }}
             />
-            <CancelOrderModal 
+            <CancelOrderModal
                 visible={showCancelModal}
                 onClose={() => setShowCancelModal(false)}
                 onConfirm={handleConfirmCancel}

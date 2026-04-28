@@ -10,7 +10,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import CustomText from '../components/CustomText';
 import { TaxBreakdownModal } from '../components/TaxBreakdownModal';
 import { clearCart, selectCartItems, selectCartTotalWithTaxes } from '../src/store/cartSlice';
-import { clearCustomerDetails } from '../src/store/userSlice';
+import { clearCustomerDetails, selectMobileSettings } from '../src/store/userSlice';
 import { theme } from '../src/styles/theme';
 import { buildPluralOrderPayload } from '../src/utils/Cart';
 import { useEnvironment } from '../src/utils/Constants';
@@ -38,13 +38,14 @@ export default function PaymentSelection() {
     const { apiBaseUrl } = useEnvironment();
     const totalPayable = useSelector(selectCartTotalWithTaxes);
     const cartItems = useSelector(selectCartItems);
+    const mobileSettings = useSelector(selectMobileSettings);
+    const currency = mobileSettings?.['currency_symbol'] || '₹';
 
     const [loaderState, setLoaderState] = useState<LoaderState>('idle');
     const [loaderText, setLoaderText] = useState('');
     const [showTaxModal, setShowTaxModal] = useState(false);
 
-    const handleSuccess = async (data: any) => {
-        console.log("Payment Success Handler:", data);
+    const handleSuccess = async (data: any, razorResp: any) => {
         setLoaderState('success');
         setLoaderText('Order Successful!');
 
@@ -62,14 +63,12 @@ export default function PaymentSelection() {
 
         dispatch(clearCart());
         dispatch(clearCustomerDetails());
-        
+
         // Pass the actual order ID from Razorpay response to confirmation screen
-        const orderId = data?.razorpay_order_id || '';
-        router.replace({ pathname: '/confirmation', params: { orderId } });
+        router.replace({ pathname: '/confirmation', params: { orderId: razorResp?.app_order_id, token: razorResp?.kot_no } });
     };
 
     const handleFailure = (error: any) => {
-        console.log("Payment Failure Handler:", error);
         setLoaderState('error');
         setLoaderText('');
         Toast.show({
@@ -85,9 +84,7 @@ export default function PaymentSelection() {
 
         try {
             const payload = buildPluralOrderPayload(cartItems as any);
-            console.log(JSON.stringify(payload))
             const headers = { headers: { 'Content-Type': 'application/json', 'user': 'sadmin1234', 'pwd': 'sadmin1234' } }
-            console.log(`${apiBaseUrl}validateOrder`)
             const validateResp = await makeAPIRequest(`${apiBaseUrl}validateOrder`, payload, 'POST', headers);
 
             if (validateResp && validateResp.verified) {
@@ -117,14 +114,14 @@ export default function PaymentSelection() {
 
                         const rzp = new (window as any).Razorpay({
                             ...options,
-                            handler: (response: any) => handleSuccess(response),
+                            handler: (response: any) => handleSuccess(response, razorResp),
                             modal: { ondismiss: () => handleFailure({ description: 'Payment Dismissed' }) }
                         });
                         rzp.open();
                     } else {
                         // NATIVE FLOW
                         RazorpayCheckout.open(options)
-                            .then(handleSuccess)
+                            .then((response: any) => handleSuccess(response, razorResp))
                             .catch(handleFailure);
                     }
                 } else {
@@ -163,7 +160,7 @@ export default function PaymentSelection() {
                     </CustomText>
                     <View style={styles.totalRowContainer}>
                         <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.headingXXXX} color="#D13C25" style={styles.totalValue}>
-                            ₹{totalPayable.toFixed(2)}
+                            {currency}{totalPayable.toFixed(2)}
                         </CustomText>
                         <TouchableOpacity onPress={() => setShowTaxModal(true)} style={styles.infoIcon}>
                             <Ionicons name="information-circle-outline" size={32} color={theme.colors.grayDark} />

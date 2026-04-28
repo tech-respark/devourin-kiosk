@@ -358,6 +358,6 @@ export const buildPluralOrderPayload = (
         redeemRs: null,
         orderPayments: [{ txn: "Loyalty", amount: null }],
         uniqueIdentifier: uniqueId,
-        userId: "177729094306261586"
+        userId: customerDetails?.userId?.toString() || "null"
     };
 };

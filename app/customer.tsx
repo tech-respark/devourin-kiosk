@@ -5,32 +5,107 @@ import { Image, StyleSheet, TextInput, TouchableOpacity, View } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
 import { BottomDock } from '../components/BottomDock';
+import { CancelOrderModal } from '../components/CancelOrderModal';
 import CustomText from '../components/CustomText';
 import { clearCart, selectCartItems, selectCartSubtotal } from '../src/store/cartSlice';
-import { setCustomerDetails } from '../src/store/userSlice';
+import { selectMobileSettings, setCustomerDetails } from '../src/store/userSlice';
 import { theme } from '../src/styles/theme';
-import { CancelOrderModal } from '../components/CancelOrderModal';
+
+import { useAppSelector } from '@/src/store/hooks';
+import { ActivityIndicator } from 'react-native';
+import { useEnvironment } from '../src/utils/Constants';
+import { getCustomerInfoByPhoneNumber, makeAPIRequest } from '../src/utils/Helper';
 
 export default function CustomerDetails() {
     const router = useRouter();
     const dispatch = useDispatch();
+    const { apiBaseUrl } = useEnvironment();
+    const mobileSettings = useAppSelector(selectMobileSettings);
     const [name, setName] = useState('');
     const [mobile, setMobile] = useState('');
+    const [userId, setUserId] = useState<string | number | null>(null);
+    const [loading, setLoading] = useState(false);
     const [showCancelModal, setShowCancelModal] = useState(false);
+    const mobileMaxDigits = Number(mobileSettings?.['mobile_maximum_dijit']);
 
     const cartItems = useSelector(selectCartItems);
     const subTotal = useSelector(selectCartSubtotal);
     const totalQty = cartItems.reduce((acc, item) => acc + item.quantity, 0);
 
-    const handleConfirm = () => {
-        if (name.trim()) {
-            dispatch(setCustomerDetails({ name: name.trim(), mobile: mobile.trim() }));
+    const checkCustomer = async (num: string) => {
+        if (num.length !== mobileMaxDigits) return;
+        setLoading(true);
+        try {
+            const list = await getCustomerInfoByPhoneNumber(apiBaseUrl, num);
+            if (Array.isArray(list) && list.length > 0) {
+                // Find exact match or take first
+                const match = list.find((u: any) => String(u.mobile) === num) || list[0];
+                if (match) {
+                    setName(match.firstName || '');
+                    setUserId(match.userId);
+                }
+            } else {
+                setUserId(null); // Mark for creation
+                setName('');
+            }
+        } catch (e) {
+            console.log("Check customer error:", e);
+        } finally {
+            setLoading(false);
         }
-        router.push('/payment');
     };
 
-    const handleSkip = () => {
-        router.push('/payment');
+    const handleMobileChange = (text: string) => {
+        const cleaned = text.replace(/[^0-9]/g, '').slice(0, mobileMaxDigits);
+        setMobile(cleaned);
+        if (cleaned.length === mobileMaxDigits) {
+            checkCustomer(cleaned);
+        } else {
+            setUserId(null);
+        }
+    };
+
+    const setUser = (finalUserId: any) => {
+        dispatch(setCustomerDetails({
+            name: name.trim() || 'guest',
+            mobile: mobile.trim() || '9000000000',
+            userId: finalUserId
+        }));
+    };
+
+    const handleConfirm = async () => {
+        if (!mobile || mobile.length !== mobileMaxDigits) {
+            return;
+        }
+
+        setLoading(true);
+        let finalUserId = userId;
+
+        try {
+            if (!finalUserId) {
+                // Create user if not found
+                const createUrl = `${apiBaseUrl}createUser`;
+                const payload = {
+                    firstName: name,
+                    lastName: '',
+                    password: '',
+                    userType: "QSR",
+                    username: mobile,
+                    dateOfBirth: '',
+                    anniversary: '',
+                };
+                const createRes = await makeAPIRequest(createUrl, payload, 'POST');
+                if (createRes && createRes.userId) {
+                    finalUserId = createRes.userId;
+                }
+            }
+            setUser(finalUserId);
+            router.push('/payment');
+        } catch (e) {
+            console.log("Confirm error:", e);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleConfirmCancel = () => {
@@ -59,6 +134,23 @@ export default function CustomerDetails() {
                         Enter Your Details To Place Your Order
                     </CustomText>
 
+                    {/* Mobile Input */}
+                    <View style={styles.inputWrapper}>
+                        <View style={styles.iconContainer}>
+                            <Ionicons name="call-outline" size={24} color="#333" />
+                        </View>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Enter Mobile Number"
+                            placeholderTextColor="#999"
+                            keyboardType="phone-pad"
+                            value={mobile}
+                            maxLength={mobileMaxDigits}
+                            onChangeText={handleMobileChange}
+                        />
+                        {loading && <ActivityIndicator color={theme.colors.theme} style={{ marginRight: 10 }} />}
+                    </View>
+
                     {/* Name Input */}
                     <View style={styles.inputWrapper}>
                         <View style={styles.iconContainer}>
@@ -73,39 +165,36 @@ export default function CustomerDetails() {
                         />
                     </View>
 
-                    {/* Mobile Input */}
-                    <View style={styles.inputWrapper}>
-                        <View style={styles.iconContainer}>
-                            <Ionicons name="call-outline" size={24} color="#333" />
-                        </View>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Enter Mobile Number"
-                            placeholderTextColor="#999"
-                            keyboardType="phone-pad"
-                            value={mobile}
-                            onChangeText={setMobile}
-                        />
-                    </View>
-
                     {/* Action Buttons */}
                     <View style={styles.btnRow}>
-                        <TouchableOpacity style={styles.skipBtn} onPress={handleSkip}>
+                        <TouchableOpacity
+                            style={styles.skipBtn}
+                            onPress={() => { setUser(1); router.push('/payment') }}
+                            disabled={loading}
+                        >
                             <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.heading} color={theme.colors.grayDark}>
                                 Skip
                             </CustomText>
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.confirmBtn} onPress={handleConfirm}>
-                            <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.heading} color="#fff">
-                                Confirm
-                            </CustomText>
+                        <TouchableOpacity
+                            style={[styles.confirmBtn, loading && { opacity: 0.7 }, { backgroundColor: (mobile.length !== mobileMaxDigits || name.trim() === '') ? 'lightgray' : '#D13C25' }]}
+                            onPress={handleConfirm}
+                            disabled={loading || (mobile.length !== mobileMaxDigits || name.trim() === '')}
+                        >
+                            {loading ? (
+                                <ActivityIndicator color="#fff" />
+                            ) : (
+                                <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.heading} color="#fff">
+                                    Confirm
+                                </CustomText>
+                            )}
                         </TouchableOpacity>
                     </View>
                 </View>
             </View>
 
             <BottomDock itemCount={totalQty} subTotal={subTotal} onCancel={() => setShowCancelModal(true)} hideProceed={true} />
-            <CancelOrderModal 
+            <CancelOrderModal
                 visible={showCancelModal}
                 onClose={() => setShowCancelModal(false)}
                 onConfirm={handleConfirmCancel}
@@ -180,7 +269,6 @@ const styles = StyleSheet.create({
     confirmBtn: {
         flex: 1,
         height: 70,
-        backgroundColor: '#D13C25',
         borderRadius: 15,
         alignItems: 'center',
         justifyContent: 'center',

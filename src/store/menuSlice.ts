@@ -7,6 +7,7 @@ export interface MenuState {
     categories: any[];
     addOnItems: any[];
     addOnCategories: any[];
+    itemImages: any;
 }
 
 const initialState: MenuState = {
@@ -15,6 +16,7 @@ const initialState: MenuState = {
     categories: [],
     addOnItems: [],
     addOnCategories: [],
+    itemImages: {}
 };
 
 const menuSlice = createSlice({
@@ -36,6 +38,9 @@ const menuSlice = createSlice({
         setAddOnCategories: (state, action: PayloadAction<any[]>) => {
             state.addOnCategories = action.payload;
         },
+        setItemImages: (state, action: PayloadAction<any[]>) => {
+            state.itemImages = action.payload;
+        }
     },
 });
 
@@ -45,6 +50,7 @@ export const {
     setOrganisedMenuItems,
     setAddOnItems,
     setAddOnCategories,
+    setItemImages
 } = menuSlice.actions;
 
 export const selectMenuItems = (state: RootState) => state.menu.menuItems;
@@ -52,5 +58,6 @@ export const selectOrganisedMenuItems = (state: RootState) => state.menu.organis
 export const selectCategories = (state: RootState) => state.menu.categories;
 export const selectAddOnItems = (state: RootState) => state.menu.addOnItems;
 export const selectAddOnCategories = (state: RootState) => state.menu.addOnCategories;
+export const selectItemImages = (state: RootState) => state.menu.itemImages;
 
 export default menuSlice.reducer;

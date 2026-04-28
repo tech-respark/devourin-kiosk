@@ -3,6 +3,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
 import { Modal, Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { theme } from '../src/styles/theme';
+import { useAppSelector } from '../src/store/hooks';
+import { selectMobileSettings } from '../src/store/userSlice';
 import CustomText from './CustomText';
 
 interface TaxBreakdownModalProps {
@@ -12,6 +14,8 @@ interface TaxBreakdownModalProps {
 }
 
 export const TaxBreakdownModal: React.FC<TaxBreakdownModalProps> = ({ visible, onClose, cartItems }) => {
+    const mobileSettings = useAppSelector(selectMobileSettings);
+    const currency = mobileSettings?.['currency_symbol'] || '₹';
 
     const calculateBreakdown = () => {
         let subtotal = 0;
@@ -60,37 +64,37 @@ export const TaxBreakdownModal: React.FC<TaxBreakdownModalProps> = ({ visible, o
                     <ScrollView showsVerticalScrollIndicator={false}>
                         <View style={styles.row}>
                             <CustomText color="#666">Item Subtotal</CustomText>
-                            <CustomText fontFamily={theme.fonts.SemiBold}>₹{data.subtotal.toFixed(2)}</CustomText>
+                            <CustomText fontFamily={theme.fonts.SemiBold}>{currency}{data.subtotal.toFixed(2)}</CustomText>
                         </View>
 
                         {data.cgst > 0 && (
                             <View style={styles.row}>
                                 <CustomText color="#666">CGST</CustomText>
-                                <CustomText fontFamily={theme.fonts.Medium}>₹{data.cgst.toFixed(2)}</CustomText>
+                                <CustomText fontFamily={theme.fonts.Medium}>{currency}{data.cgst.toFixed(2)}</CustomText>
                             </View>
                         )}
                         {data.sgst > 0 && (
                             <View style={styles.row}>
                                 <CustomText color="#666">SGST</CustomText>
-                                <CustomText fontFamily={theme.fonts.Medium}>₹{data.sgst.toFixed(2)}</CustomText>
+                                <CustomText fontFamily={theme.fonts.Medium}>{currency}{data.sgst.toFixed(2)}</CustomText>
                             </View>
                         )}
                         {data.igst > 0 && (
                             <View style={styles.row}>
                                 <CustomText color="#666">IGST</CustomText>
-                                <CustomText fontFamily={theme.fonts.Medium}>₹{data.igst.toFixed(2)}</CustomText>
+                                <CustomText fontFamily={theme.fonts.Medium}>{currency}{data.igst.toFixed(2)}</CustomText>
                             </View>
                         )}
                         {data.vat > 0 && (
                             <View style={styles.row}>
                                 <CustomText color="#666">VAT</CustomText>
-                                <CustomText fontFamily={theme.fonts.Medium}>₹{data.vat.toFixed(2)}</CustomText>
+                                <CustomText fontFamily={theme.fonts.Medium}>{currency}{data.vat.toFixed(2)}</CustomText>
                             </View>
                         )}
 
                         <View style={[styles.row, styles.totalRow]}>
                             <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.large}>Total Payable</CustomText>
-                            <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.large} color={theme.colors.theme}>₹{data.total.toFixed(2)}</CustomText>
+                            <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.large} color={theme.colors.theme}>{currency}{data.total.toFixed(2)}</CustomText>
                         </View>
                     </ScrollView>
 

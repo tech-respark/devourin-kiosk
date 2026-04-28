@@ -4,6 +4,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { theme } from '../src/styles/theme';
+import { useAppSelector } from '../src/store/hooks';
+import { selectMobileSettings } from '../src/store/userSlice';
 import CustomText from './CustomText';
 
 interface BottomDockProps {
@@ -23,6 +25,9 @@ export const BottomDock: React.FC<BottomDockProps> = ({
     hideProceed,
     proceedText = "Proceed"
 }) => {
+    const mobileSettings = useAppSelector(selectMobileSettings);
+    const currency = mobileSettings?.['currency_symbol'] || '₹';
+
     return (
         <View style={styles.container}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xl }}>
@@ -52,7 +57,7 @@ export const BottomDock: React.FC<BottomDockProps> = ({
                         Sub Total
                     </CustomText>
                     <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.headingX} color={theme.colors.black}>
-                        ₹{subTotal.toFixed(1)}
+                        {currency}{subTotal.toFixed(1)}
                     </CustomText>
                 </View>
             </View>

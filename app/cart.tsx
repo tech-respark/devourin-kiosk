@@ -1,8 +1,12 @@
+import { useAppSelector } from '@/src/store/hooks';
+import { selectMobileSettings } from '@/src/store/userSlice';
+import { CUSTOMER_DETAILS_REQUIRED } from '@/src/utils/Constants';
 import { Feather } from '@expo/vector-icons';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React from 'react';
+import { Image } from 'expo-image';
 import {
     FlatList,
     StyleSheet,
@@ -13,6 +17,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
 import { BottomDock } from '../components/BottomDock';
+import { CancelOrderModal } from '../components/CancelOrderModal';
 import CustomText from '../components/CustomText';
 import {
     clearCart,
@@ -22,15 +27,17 @@ import {
     setItemRemark,
     updateQuantity,
 } from '../src/store/cartSlice';
+import { selectItemImages } from '../src/store/menuSlice';
 import { theme } from '../src/styles/theme';
-import { AppConfig } from '../src/utils/AppConfig';
-import { CancelOrderModal } from '../components/CancelOrderModal';
 
 export default function MyOrderCart() {
     const dispatch = useDispatch();
     const router = useRouter();
     const cartItems = useSelector(selectCartItems);
+    const itemImages = useSelector(selectItemImages);
     const subTotal = useSelector(selectCartSubtotal);
+    const currency = useAppSelector(selectMobileSettings)?.['currency_symbol'] || '₹';
+
     const [showCancelModal, setShowCancelModal] = React.useState(false);
 
     const totalQty = cartItems.reduce((acc, item) => acc + item.quantity, 0);
@@ -53,8 +60,12 @@ export default function MyOrderCart() {
     const renderCartItem = ({ item }: { item: any }) => (
         <View style={styles.cartItemCard}>
             {/* Item Image */}
-            <View style={[styles.itemImageContainer, { backgroundColor: item.imageColor || '#F3F6FB' }]}>
-                <Ionicons name="fast-food-outline" size={50} color={theme.colors.theme} />
+            <View style={[styles.itemImageContainer, { backgroundColor: item.imageColor || '#F3F6FB', overflow: 'hidden' }]}>
+                {itemImages?.[item.itemId] ? (
+                    <Image source={{ uri: itemImages[item.itemId] }} style={styles.itemImage} resizeMode="cover" />
+                ) : (
+                    <Ionicons name="fast-food-outline" size={50} color={theme.colors.theme} />
+                )}
             </View>
 
             <View style={styles.itemDetails}>
@@ -75,7 +86,7 @@ export default function MyOrderCart() {
                     <View style={styles.addonsList}>
                         {item.addOns.map((addon: any, idx: number) => (
                             <CustomText key={idx} fontSize={theme.fontSize.small} color={theme.colors.grayDark}>
-                                • {addon.addon} x{Math.round(addon.quantity / item.quantity)} — ₹{addon.price}
+                                • {addon.addon} x{Math.round(addon.quantity / item.quantity)} — {currency}{addon.price}
                             </CustomText>
                         ))}
                     </View>
@@ -95,7 +106,7 @@ export default function MyOrderCart() {
 
                 <View style={styles.priceActionRow}>
                     <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.heading} color={theme.colors.black}>
-                        ₹{item.price.toFixed(0)}
+                        {currency}{item.price.toFixed(0)}
                     </CustomText>
 
                     <View style={styles.qtyContainer}>
@@ -174,7 +185,7 @@ export default function MyOrderCart() {
                 subTotal={subTotal}
                 onCancel={() => setShowCancelModal(true)}
                 onProceed={() => {
-                    if (AppConfig.CUSTOMER_DETAILS_REQUIRED) {
+                    if (CUSTOMER_DETAILS_REQUIRED) {
                         router.push('/customer');
                     } else {
                         router.push('/payment');
@@ -182,7 +193,7 @@ export default function MyOrderCart() {
                 }}
                 proceedText="Confirm"
             />
-            <CancelOrderModal 
+            <CancelOrderModal
                 visible={showCancelModal}
                 onClose={() => setShowCancelModal(false)}
                 onConfirm={handleConfirmCancel}
@@ -257,6 +268,10 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         marginRight: theme.spacing.md,
+    },
+    itemImage: {
+        width: '100%',
+        height: '100%',
     },
     itemDetails: { flex: 1, flexDirection: 'column' },
     itemHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },

@@ -7,14 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import CustomText from '../components/CustomText';
 import { theme } from '../src/styles/theme';
 import { useEnvironment } from '../src/utils/Constants';
-import { makeAPIRequest } from '../src/utils/Helper';
-
-// For development, use your machine's IP (e.g. http://192.168.10.176:7009) instead of localhost for Android
-const getLocalPrinterBaseUrl = () => {
-    if (Platform.OS === 'web') return 'http://localhost:7009';
-    if (Platform.OS === 'android') return 'http://10.0.2.2:7009';
-    return 'http://127.0.0.1:7009';
-};
+import { getLocalPrinterBaseUrl, makeAPIRequest } from '../src/utils/Helper';
 
 const PRINTER_URL = `${getLocalPrinterBaseUrl()}/devourin-printing/v1/print`;
 
@@ -22,6 +15,7 @@ export default function ConfirmationScreen() {
     const router = useRouter();
     const params = useLocalSearchParams();
     const orderId = params.orderId as string;
+    const token = params.token as string;
     const { apiBaseUrl } = useEnvironment();
 
     const scaleAnim = useRef(new Animated.Value(0)).current;
@@ -38,7 +32,12 @@ export default function ConfirmationScreen() {
                 const url = `${apiBaseUrl}qsrkotandbillprintdata?id=${orderId}`;
                 const printData = await makeAPIRequest(url, null, 'GET');
                 if (printData) {
-                    await makeAPIRequest(PRINTER_URL, printData, 'POST');
+                    const res = await makeAPIRequest(PRINTER_URL, printData, 'POST', {}, '', true, undefined, false);
+                    if (res && res.ok) {
+                        console.log("Print successful, calling settlement API...");
+                        const headers = { headers: { 'Content-Type': 'application/json', 'id': orderId } }
+                        const settlementRes = await makeAPIRequest(`${apiBaseUrl}markorderkotprinted`, {}, 'POST', headers);
+                    }
                 }
             } catch (err) {
                 console.error("Print flow failed:", err);
@@ -106,6 +105,19 @@ export default function ConfirmationScreen() {
                             Redirecting to home in <CustomText fontFamily={theme.fonts.Bold} color={theme.colors.theme}>{seconds}s</CustomText>
                         </CustomText>
                     </View>
+
+                    {token && (
+                        <View style={styles.tokenSection}>
+                            <CustomText fontFamily={theme.fonts.SemiBold} fontSize={theme.fontSize.medium} color="#666">
+                                YOUR TOKEN NUMBER
+                            </CustomText>
+                            <View style={styles.tokenCard}>
+                                <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.headingXXXX} color={theme.colors.theme}>
+                                    {token}
+                                </CustomText>
+                            </View>
+                        </View>
+                    )}
                 </Animated.View>
 
                 <TouchableOpacity
@@ -250,5 +262,23 @@ const styles = StyleSheet.create({
         width: 140,
         height: 40,
         opacity: 0.5,
-    }
+    },
+    tokenSection: {
+        alignItems: 'center',
+        marginVertical: 40,
+    },
+    tokenCard: {
+        backgroundColor: '#fff',
+        paddingHorizontal: 80,
+        paddingVertical: 25,
+        borderRadius: 25,
+        borderWidth: 2,
+        borderColor: theme.colors.theme,
+        marginTop: 15,
+        shadowColor: theme.colors.theme,
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.1,
+        shadowRadius: 20,
+        elevation: 5,
+    },
 });

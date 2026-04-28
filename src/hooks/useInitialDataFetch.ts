@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import Toast from 'react-native-toast-message';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { setAddOnCategories, setAddOnItems, setCategories, setMenuItems, setOrganisedMenuItems } from '../store/menuSlice';
-import { selectBranchId } from '../store/userSlice';
+import { setAddOnCategories, setAddOnItems, setCategories, setItemImages, setMenuItems, setOrganisedMenuItems } from '../store/menuSlice';
+import { selectBranchId, setBranchConfigs, setMobileSettings } from '../store/userSlice';
 import { NETWORK_ERROR, useEnvironment } from '../utils/Constants';
-import { groupPortions, makeAPIRequest, organizeMenu } from '../utils/Helper';
+import { getLocalPrinterBaseUrl, groupPortions, makeAPIRequest, organizeMenu } from '../utils/Helper';
 
 export const useInitialDataFetch = () => {
     const dispatch = useAppDispatch();
@@ -13,12 +13,13 @@ export const useInitialDataFetch = () => {
     const [loading, setLoading] = useState<boolean>(false);
 
     const getPrinterStatus = async () => {
-        // try {
-        //     const url = 'http://192.168.10.176:7009/devourin-printing/v1/listprinters';
-        //     const printerData = await makeAPIRequest(url, null, 'GET');
-        // } catch (err) {
-        //     console.log("Printer check skipped/failed");
-        // }
+        try {
+            const url = `${getLocalPrinterBaseUrl()}/devourin-printing/v1/listprinters`;
+            const printerData = await makeAPIRequest(url, null, 'GET');
+            console.log(printerData)
+        } catch (err) {
+            Toast.show({ text1: 'Printer not connected', type: 'error' });
+        }
     };
 
     // Fetch Categories
@@ -44,6 +45,17 @@ export const useInitialDataFetch = () => {
         }
     };
 
+    const getItemImages = async () => {
+        const url = `${apiBaseUrl}itemimagesbybrsrc?br=${branchId}&src=SPARK`
+        const response = await makeAPIRequest(url, null, "GET");
+        if (response) {
+            const output: any = Object.fromEntries(
+                response.map((item: any) => [item.itemId, item.imgPath])
+            );
+            dispatch(setItemImages(output));
+        }
+    };
+
     // Fetch Addon Items
     const getAddOnItems = async () => {
         const url = apiBaseUrl + `addonsbyordertypeandbranch?type=${'Dinein'}&id=${branchId}`;
@@ -62,17 +74,53 @@ export const useInitialDataFetch = () => {
         }
     };
 
+    const getMobileSettings = async () => {
+        const url = apiBaseUrl + `mobileappsettings`;
+        const response = await makeAPIRequest(url, null, "GET");
+        if (!response?.length) return;
+        const output = Object.fromEntries(
+            response.map((item: any) => {
+                const { setting, description, enable, value } = item;
+                // if (setting === 'is_printing_enabled_for_mobile_qsr') {
+                //     dispatch(setPrinterEnabled({ printerEnabled: enable && Platform.OS === 'android' }));
+                // }
+                switch (setting) {
+                    case "currency_symbol":
+                        return [setting, description];
+                    case "mobile_maximum_dijit":
+                        return [setting, enable ? description : 10];
+                    case "mobile_minimum_dijit":
+                        return [setting, enable ? description : 8];
+                    default:
+                        return [setting, enable];
+                }
+            })
+        );
+        dispatch(setMobileSettings(output));
+    };
+
+    const getBranchConfigs = async () => {
+        const url = apiBaseUrl + `branchconfigs`;
+        const response = await makeAPIRequest(url, null, "GET");
+        if (response) {
+            const filteredData = response.filter((item: { [key: string]: any }) => item.branchId === parseInt(branchId.toString()));
+            dispatch(setBranchConfigs(filteredData));
+        }
+    };
+
     // Initial setup orchestration
     const callInitialSetUpAPIAsync = async () => {
         setLoading(true);
         try {
             const categories = await getCategories();
-            // Fetch menu, addons and addon categories in parallel
             await Promise.all([
                 getMenuItems(categories),
                 getAddOnItems(),
                 getAddOnCategories(),
-                getPrinterStatus()
+                getMobileSettings(),
+                getBranchConfigs(),
+                getPrinterStatus(),
+                getItemImages()
             ]);
         } catch (error) {
             Toast.show({ text1: NETWORK_ERROR, type: 'error' });

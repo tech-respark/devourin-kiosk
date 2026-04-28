@@ -2,7 +2,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Image, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, BackHandler, Image, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
 import { AdminModal } from '../components/AdminModal';
@@ -27,6 +27,17 @@ export default function ModeSelectionScreen() {
     const [showAdminModal, setShowAdminModal] = useState(false);
 
     useEffect(() => {
+        // Prevent back navigation on Android
+        const backHandler = BackHandler.addEventListener('hardwareBackPress', () => true);
+
+        // Prevent back navigation on Web
+        if (Platform.OS === 'web') {
+            window.history.pushState(null, '', window.location.href);
+            window.onpopstate = function () {
+                window.history.pushState(null, '', window.location.href);
+            };
+        }
+
         const initializeSystem = async () => {
             // Only fetch if we don't have data yet
             if (!organisedMenu || organisedMenu.length === 0) {
@@ -35,6 +46,13 @@ export default function ModeSelectionScreen() {
             setIsConfigured(true);
         };
         initializeSystem();
+
+        return () => {
+            backHandler.remove();
+            if (Platform.OS === 'web') {
+                window.onpopstate = null;
+            }
+        };
     }, []);
 
     const handleSelectMode = (mode: string) => {

@@ -1,9 +1,12 @@
+import { Platform } from "react-native";
 import Toast from "react-native-toast-message";
 import { store } from "../store";
+import { LOCAL_IP } from "./Constants";
 
 const getHeaders = (options: RequestInit = {}) => {
     const state = store.getState();
     return {
+        "Content-Type": "application/json",
         "app": state.user.dbName ?? '',
         "br": state.user.branchId ?? '',
         ...(options.headers || {}),
@@ -58,7 +61,7 @@ export const makeAPIRequest = async (
             method,
             signal,
             ...headers,
-            headers: getHeaders(headers)
+            headers: getHeaders(headers),
         };
 
         if (body && (method === "POST" || method === "PUT")) {
@@ -70,8 +73,7 @@ export const makeAPIRequest = async (
         }
         const response = await fetch(url, fetchOptions);
         if (!response.ok) {
-            console.log(url)
-            if (showToast) Toast.show({ type: 'error', text1: customErrorMsg || "API Request Failed" });
+            if (showToast) Toast.show({ type: 'error', text1: customErrorMsg || "Network Error" });
             return null;
         }
 
@@ -80,9 +82,7 @@ export const makeAPIRequest = async (
         }
         return response;
     } catch (error: any) {
-        if (error.name !== 'AbortError' && showToast) {
-            Toast.show({ type: 'error', text1: "Network Error" });
-        }
+        console.log(error)
         return null;
     }
 };
@@ -164,6 +164,12 @@ export const organizeMenu = (groupedItems: any[], categories: any[]) => {
     return menu;
 };
 
+export const getCustomerInfoByPhoneNumber = async (apiBaseUrl: string, phone: string) => {
+    let url = apiBaseUrl + `getUsersByPattern?pattern=${phone}`;
+    let response = await makeAPIRequest(url, null, "GET");
+    return response;
+};
+
 export const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export const checkBranchValidity = async (apiBaseUrl: string, branchId: string | number) => {
@@ -176,4 +182,10 @@ export const checkBranchValidity = async (apiBaseUrl: string, branchId: string |
         return true;
     }
     return false;
+};
+
+export const getLocalPrinterBaseUrl = () => {
+    if (Platform.OS === 'web') return `http://${__DEV__ ? LOCAL_IP : 'localhost'}:7009`;
+    if (Platform.OS === 'android') return `http://${__DEV__ ? LOCAL_IP : 'localhost'}:7009`;
+    return `http://${__DEV__ ? LOCAL_IP : 'localhost'}:7009`;
 };

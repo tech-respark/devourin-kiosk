@@ -2,6 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { Modal, StyleSheet, TouchableOpacity, View } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
+import { useAppSelector } from '../src/store/hooks';
+import { selectMobileSettings } from '../src/store/userSlice';
 import { theme } from '../src/styles/theme';
 import CustomText from './CustomText';
 
@@ -14,6 +16,9 @@ interface UpiModalProps {
 }
 
 export const UpiModal: React.FC<UpiModalProps> = ({ visible, onClose, payableAmount, qrString, onPaymentConfirm }) => {
+    const mobileSettings = useAppSelector(selectMobileSettings);
+    const currency = mobileSettings?.['currency_symbol'] || '₹';
+
     if (!visible) return null;
 
     return (
@@ -44,7 +49,7 @@ export const UpiModal: React.FC<UpiModalProps> = ({ visible, onClose, payableAmo
                                 Total Amount
                             </CustomText>
                             <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.headingXXX} color="#162640">
-                                ₹{payableAmount.toFixed(1)}
+                                {currency}{payableAmount.toFixed(1)}
                             </CustomText>
                         </View>
                     </View>

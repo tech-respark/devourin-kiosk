@@ -3,6 +3,7 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 interface CustomerDetails {
     name: string;
     mobile: string;
+    userId?: string | number;
 }
 
 interface UserState {
@@ -92,7 +93,27 @@ export const selectDbName = (state: any) => state.user.dbName;
 export const selectBranchId = (state: any) => state.user.branchId;
 export const selectUserData = (state: any) => state.user.userData;
 export const selectMobileSettings = (state: any) => state.user.mobileSettings;
+
+export const selectMobileSetting = (key: string) => (state: any) => {
+    const settings = state.user.mobileSettings;
+    if (!settings) return null;
+    if (Array.isArray(settings)) {
+        return settings.find((s: any) => s.property === key)?.value;
+    }
+    return settings[key];
+};
+
 export const selectBranchConfigs = (state: any) => state.user.branchConfigs;
+
+export const selectBranchConfig = (key: string) => (state: any) => {
+    const configs = state.user.branchConfigs;
+    if (!configs) return null;
+    if (Array.isArray(configs)) {
+        return configs.find((c: any) => c.property === key)?.value;
+    }
+    return configs[key];
+};
+
 export const selectTaxes = (state: any) => state.user.taxes;
 export const selectCustomerDetails = (state: any) => state.user.customerDetails;
 

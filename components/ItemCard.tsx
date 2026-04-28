@@ -1,6 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
+import { Image } from 'expo-image';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { theme } from '../src/styles/theme';
 import CustomText from './CustomText';
@@ -8,8 +9,10 @@ import CustomText from './CustomText';
 interface ItemCardProps {
     name: string;
     price: number;
+    currency?: string;
     isVeg: boolean;
     imageColor?: string;
+    imageUrl?: string | null;
     quantity?: number;
     hasAddOnOrPortions?: boolean;
     onAdd: () => void;
@@ -21,8 +24,10 @@ interface ItemCardProps {
 export const ItemCard: React.FC<ItemCardProps> = ({
     name,
     price,
+    currency = '₹',
     isVeg,
     imageColor = theme.colors.theme_light2,
+    imageUrl,
     quantity = 0,
     hasAddOnOrPortions = false,
     onAdd,
@@ -53,7 +58,11 @@ export const ItemCard: React.FC<ItemCardProps> = ({
         <View style={[styles.cardContainer, { maxWidth: maxWidth || '100%' }]}>
             <TouchableOpacity activeOpacity={0.85} onPress={handleAddPress} style={styles.imageWrapper}>
                 <View style={[styles.imagePlaceholder, { backgroundColor: imageColor }]}>
-                    <Ionicons name='fast-food-outline' size={60} color={theme.colors.theme} />
+                    {imageUrl ? (
+                        <Image source={{ uri: imageUrl }} style={styles.actualImage} resizeMode="cover" />
+                    ) : (
+                        <Ionicons name='fast-food-outline' size={60} color={theme.colors.theme} />
+                    )}
                 </View>
                 {hasAddOnOrPortions && (
                     <View style={styles.customisableBadge}>
@@ -84,7 +93,7 @@ export const ItemCard: React.FC<ItemCardProps> = ({
 
                 <View style={styles.actionRow}>
                     <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.large} color={theme.colors.black}>
-                        ₹{price.toFixed(0)}
+                        {currency}{price.toFixed(0)}
                     </CustomText>
 
                     {quantity > 0 ? (
@@ -137,6 +146,11 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: theme.spacing.md,
+        overflow: 'hidden',
+    },
+    actualImage: {
+        width: '100%',
+        height: '100%',
     },
     customisableBadge: {
         position: 'absolute',
