@@ -18,11 +18,6 @@ if (Platform.OS === 'web' && typeof document !== 'undefined') {
   style.textContent = `
     ${!__DEV__ ? `
     * {
-      user-select: none;
-      -webkit-user-select: none;
-      -webkit-touch-callout: none;
-      user-drag: none;
-      -webkit-user-drag: none;
       touch-action: pan-y;
     }
     body {

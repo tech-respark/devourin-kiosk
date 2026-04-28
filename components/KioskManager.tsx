@@ -31,24 +31,7 @@ export const KioskManager: React.FC<{ children: React.ReactNode }> = ({ children
     useEffect(() => {
         if (Platform.OS !== 'web') return;
 
-        // 1. Browser Locks
-        if (__DEV__) return;
-        const handleContextMenu = (e: MouseEvent) => e.preventDefault();
-        const handleKeyDown = (e: KeyboardEvent) => {
-            // Disable F12, Ctrl+Shift+I, Ctrl+U, etc.
-            if (
-                e.key === 'F12' ||
-                (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'C' || e.key === 'J')) ||
-                (e.ctrlKey && e.key === 'u')
-            ) {
-                e.preventDefault();
-            }
-        };
-
-        window.addEventListener('contextmenu', handleContextMenu);
-        window.addEventListener('keydown', handleKeyDown);
-
-        // 2. Global Inactivity Listeners
+        // Global Inactivity Listeners
         window.addEventListener('mousemove', resetTimer);
         window.addEventListener('mousedown', resetTimer);
         window.addEventListener('keypress', resetTimer);
@@ -57,8 +40,6 @@ export const KioskManager: React.FC<{ children: React.ReactNode }> = ({ children
         resetTimer();
 
         return () => {
-            window.removeEventListener('contextmenu', handleContextMenu);
-            window.removeEventListener('keydown', handleKeyDown);
             window.removeEventListener('mousemove', resetTimer);
             window.removeEventListener('mousedown', resetTimer);
             window.removeEventListener('keypress', resetTimer);
