@@ -62,7 +62,7 @@ export const makeAPIRequest = async (
         };
 
         if (body && (method === "POST" || method === "PUT")) {
-            if (body instanceof FormData) {
+            if (body instanceof FormData || typeof body === 'string') {
                 fetchOptions.body = body;
             } else {
                 fetchOptions.body = JSON.stringify(body);

@@ -49,14 +49,12 @@ export default function PaymentSelection() {
         setLoaderText('Order Successful!');
 
         // Convert Razorpay response to FormData as required by the callback API
-        const formData = new FormData();
-        formData.append('razorpay_order_id', data.razorpay_order_id);
-        formData.append('razorpay_payment_id', data.razorpay_payment_id);
-        formData.append('razorpay_signature', data.razorpay_signature);
-        console.log(formData)
+        let verifyPayload = "razorpay_payment_id=" + data.razorpay_payment_id +
+            "&razorpay_order_id=" + data.razorpay_order_id +
+            "&razorpay_signature=" + data.razorpay_signature;
         try {
             const url = `${apiBaseUrl}redirectrazorpay`;
-            await makeAPIRequest(url, formData, 'POST', { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
+            await makeAPIRequest(url, verifyPayload, 'POST', { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }, undefined, true, undefined, false);
         } catch (error) {
             console.error("Razorpay Callback API Error:", error);
         }

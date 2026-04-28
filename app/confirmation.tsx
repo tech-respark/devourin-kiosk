@@ -29,20 +29,20 @@ export default function ConfirmationScreen() {
             }),
         ]).start();
 
-        // Countdown for auto-redirect
+        // Countdown logic
         const timer = setInterval(() => {
-            setSeconds((prev) => {
-                if (prev <= 1) {
-                    clearInterval(timer);
-                    router.replace('/mode');
-                    return 0;
-                }
-                return prev - 1;
-            });
+            setSeconds((prev) => (prev > 0 ? prev - 1 : 0));
         }, 1000);
 
         return () => clearInterval(timer);
     }, []);
+
+    // Watch for countdown completion
+    useEffect(() => {
+        if (seconds === 0) {
+            router.replace('/mode');
+        }
+    }, [seconds]);
 
     return (
         <SafeAreaView style={styles.container}>
