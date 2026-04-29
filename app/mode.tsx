@@ -1,9 +1,9 @@
 import { getLocalPrinterBaseUrl, makeAPIRequest } from '@/src/utils/Helper';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, BackHandler, Image, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, BackHandler, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import { useDispatch, useSelector } from 'react-redux';
@@ -14,6 +14,8 @@ import { clearCart } from '../src/store/cartSlice';
 import { selectOrganisedMenuItems } from '../src/store/menuSlice';
 import { resetUser } from '../src/store/userSlice';
 import { theme } from '../src/styles/theme';
+
+const LogoImage = require('../assets/icons/menu_image.png');
 
 export default function ModeSelectionScreen() {
     const router = useRouter();
@@ -163,7 +165,7 @@ export default function ModeSelectionScreen() {
                 <View style={styles.centerGroup}>
                     <View style={styles.questionContainer}>
                         <CustomText
-                            fontFamily={theme.fonts.SemiBold}
+                            fontFamily={theme.fonts.Medium}
                             fontSize={theme.fontSize.headingXXX}
                             color="#222"
                             style={styles.questionText}
@@ -182,9 +184,9 @@ export default function ModeSelectionScreen() {
                                 style={styles.modeButton}
                             >
                                 <View style={styles.iconWrapper}>
-                                    <MaterialCommunityIcons name="silverware-fork-knife" size={100} color="#fff" />
+                                    <Image source={LogoImage} style={{ width: 120, height: 120 }} />
                                 </View>
-                                <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.headingXX} color="#fff">
+                                <CustomText fontFamily={theme.fonts.Medium} fontSize={theme.fontSize.headingXXX} color="#fff">
                                     Order Now
                                 </CustomText>
                             </LinearGradient>
@@ -211,7 +213,7 @@ export default function ModeSelectionScreen() {
                 {/* Footer */}
                 <View style={styles.footer}>
                     <View style={styles.poweredContainer}>
-                        <CustomText fontSize={theme.fontSize.medium} color="#666">
+                        <CustomText fontSize={theme.fontSize.heading} color='#666'>
                             Powered By
                         </CustomText>
                         <Image
@@ -263,8 +265,8 @@ const styles = StyleSheet.create({
         position: 'absolute',
         top: 0,
         left: 0,
-        width: '35%',
-        height: '100%',
+        right: 0,
+        bottom: 0,
         zIndex: 0,
     },
     bgImage: {
@@ -280,8 +282,8 @@ const styles = StyleSheet.create({
     },
     logoContainer: {
         marginTop: theme.spacing.xxxl,
-        width: '70%',
-        height: 250,
+        width: '80%',
+        height: 280,
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -294,9 +296,10 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         width: '100%',
+        marginTop: -100
     },
     questionContainer: {
-        marginBottom: theme.spacing.xl,
+        marginBottom: theme.spacing.xxxl,
     },
     questionText: {
         textAlign: 'center',
@@ -309,7 +312,7 @@ const styles = StyleSheet.create({
         width: '100%',
     },
     modeButton: {
-        width: 280,
+        width: 300,
         height: 340,
         borderRadius: 25,
         justifyContent: 'center',
@@ -338,10 +341,14 @@ const styles = StyleSheet.create({
     poweredContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 10,
+        backgroundColor: '#fff',
+        opacity: 0.8,
+        padding: theme.spacing.sm,
+        paddingHorizontal: theme.spacing.xl,
+        borderRadius: theme.border.xl
     },
     devourinLogo: {
-        width: 150,
+        width: 200,
         height: 50,
     },
 });
