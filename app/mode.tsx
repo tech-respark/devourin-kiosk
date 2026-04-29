@@ -34,7 +34,7 @@ export default function ModeSelectionScreen() {
 
     const checkPrinterStatus = async () => {
         if (__DEV__) return;
-        const url = `${getLocalPrinterBaseUrl()}/listprinters`
+        const url = `${getLocalPrinterBaseUrl()}/devourin-printing/v1/listprinters`
         setIsPrinterChecking(true);
         setIsPrinterOffline(true);
         Toast.hide();
