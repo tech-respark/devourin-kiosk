@@ -158,6 +158,11 @@ export default function PaymentSelection() {
             </View>
 
             <View style={styles.mainContent}>
+                <Image
+                    source={require('../assets/icons/sihi_logo.png')}
+                    style={styles.sihiLogo}
+                    resizeMode="contain"
+                />
                 <View style={styles.paymentCard}>
                     {/* Header: Security Badge */}
                     <View style={styles.paymentBadge}>
@@ -292,12 +297,19 @@ const styles = StyleSheet.create({
         padding: 40,
         backgroundColor: '#F8F9FB',
     },
+    sihiLogo: {
+        width: 300,
+        height: 200,
+        position: 'absolute',
+        top: 50,
+    },
     paymentCard: {
         backgroundColor: '#fff',
         borderRadius: 45,
         padding: 45,
         width: '100%',
         maxWidth: 500,
+        marginTop: theme.spacing.xxxl,
         alignItems: 'center',
         ...Platform.select({
             web: { boxShadow: '0px 25px 60px rgba(0, 0, 0, 0.05)' },

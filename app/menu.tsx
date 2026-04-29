@@ -176,7 +176,7 @@ export default function MenuDashboard() {
                         <FlatList
                             data={itemsToDisplay}
                             keyExtractor={(item, index) => `${item.itemId}-${index}`}
-                            numColumns={theme.device.isTablet ? 3 : 2}
+                            numColumns={2}
                             columnWrapperStyle={styles.row}
                             showsVerticalScrollIndicator={false}
                             contentContainerStyle={styles.listContent}
@@ -190,7 +190,7 @@ export default function MenuDashboard() {
                                     imageUrl={itemImages?.[item.itemId]}
                                     quantity={getItemQuantity(item.itemId)}
                                     hasAddOnOrPortions={hasAddOnOrPortions(item)}
-                                    maxWidth={theme.device.isTablet ? '31.5%' : '48.5%'}
+                                    maxWidth={'48.5%'}
                                     onAdd={() => handleAddToCart(item)}
                                     onRemove={() => handleRemoveFromCart(item)}
                                     onOpenModal={() => openModal(item)}

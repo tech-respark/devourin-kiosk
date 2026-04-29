@@ -135,13 +135,13 @@ const styles = StyleSheet.create({
         padding: theme.spacing.md,
         boxShadow: '0 1px 2px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
         marginBottom: theme.spacing.md,
-        minHeight: 280,
+        minHeight: 340,
     },
     imageWrapper: {
         position: 'relative',
     },
     imagePlaceholder: {
-        height: 140,
+        height: 200,
         borderRadius: theme.border.md,
         alignItems: 'center',
         justifyContent: 'center',

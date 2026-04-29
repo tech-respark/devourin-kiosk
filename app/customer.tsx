@@ -226,8 +226,19 @@ const styles = StyleSheet.create({
         width: 100,
     },
     devourinLogo: { width: 200, height: 40 },
-    mainContent: { flex: 1, alignItems: 'center', paddingTop: theme.spacing.xxxl, backgroundColor: theme.colors.background },
-    sihiLogo: { width: 300, height: 200, marginBottom: theme.spacing.xxxl },
+    mainContent: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center', // Center vertically
+        backgroundColor: theme.colors.background,
+        paddingBottom: 80, // Offset for dock
+    },
+    sihiLogo: {
+        width: 300,
+        height: 200,
+        position: 'absolute',
+        top: 50,
+    },
     formCard: {
         width: '70%',
         backgroundColor: '#fff',
