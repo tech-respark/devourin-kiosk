@@ -1,4 +1,5 @@
 import { OTA_VERSION } from '@/constants/Constants';
+import { IP_DOMAIN_MAP } from '@/src/utils/Constants';
 import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -26,7 +27,7 @@ export default function LoginScreen() {
     const dispatch = useDispatch();
     const router = useRouter();
 
-    const [ipParts, setIpParts] = useState({ part1: '3', part2: '6', part3: '57', part4: '139' });
+    const [ipParts, setIpParts] = useState({ part1: '', part2: '', part3: '', part4: '' });
     const [restaurantName, setRestaurantName] = useState('');
     const [loading, setLoading] = useState(false);
 
@@ -66,17 +67,17 @@ export default function LoginScreen() {
             Toast.show({ type: "warning", text1: "Please enter valid IP and Restaurant Name" });
             return;
         }
-
+        const domain = IP_DOMAIN_MAP[ipString] ?? ipString;
         setLoading(true);
         const dbName = restaurantName.trim().toLowerCase();
-        const baseUrl = `http://${ipString}:8080/nebula-services-1.6/${dbName}/`;
+        const baseUrl = `https://${domain}/nebula-services-1.6/${dbName}/`;
 
         try {
             const headers = { headers: { "Content-Type": "application/json", app: dbName } };
             const response = await makeAPIRequest(baseUrl + 'getBranchDetails', null, "GET", headers, "Invalid Configuration", true);
 
             if (response) {
-                const domainOrIp = response.applicationDomain || ipString;
+                const domainOrIp = response.applicationDomain || domain;
                 dispatch(setDbName(dbName));
                 dispatch(setIpAddress(domainOrIp));
                 dispatch(setTaxes(response.taxes));
@@ -109,8 +110,9 @@ export default function LoginScreen() {
         }
 
         const ipString = `${ipParts.part1}.${ipParts.part2}.${ipParts.part3}.${ipParts.part4}`;
+        const domain = IP_DOMAIN_MAP[ipString] ?? ipString;
         const dbName = restaurantName.trim().toLowerCase();
-        const baseUrl = `http://${ipString}:8080/nebula-services-1.6/${dbName}/`;
+        const baseUrl = `https://${domain}:8080/nebula-services-1.6/${dbName}/`;
 
         if (await checkBranchValidity(baseUrl, selectedBranch.branchId)) {
             dispatch(setBranchId(selectedBranch.branchId.toString()));

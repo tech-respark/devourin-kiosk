@@ -79,7 +79,7 @@ export const makeAPIRequest = async (
             ...headers,
             headers: getHeaders(headers),
         };
-
+        console.log(url)
         if (body && (method === "POST" || method === "PUT")) {
             if (body instanceof FormData || typeof body === 'string') {
                 fetchOptions.body = body;
