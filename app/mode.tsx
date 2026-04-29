@@ -145,20 +145,14 @@ export default function ModeSelectionScreen() {
 
             {/* Main Content Layer */}
             <SafeAreaView style={styles.contentLayer}>
-                {/* Restaurant Logo with Hidden Long Press Handle (3s) */}
-                <Pressable
-                    onLongPress={handleLogoLongPress}
-                    delayLongPress={3000}
-                    style={styles.logoContainer}
-                    // @ts-ignore - onContextMenu is valid for web but not in RN core types
-                    onContextMenu={(e: any) => e.preventDefault()}
-                >
+                {/* Restaurant Logo */}
+                <View style={styles.logoContainer}>
                     <Image
                         source={require('../assets/icons/sihi_logo.png')}
                         style={styles.restaurantLogo}
                         resizeMode="contain"
                     />
-                </Pressable>
+                </View>
 
                 {/* Center Group */}
                 <View style={styles.centerGroup}>
@@ -190,28 +184,18 @@ export default function ModeSelectionScreen() {
                                 </CustomText>
                             </LinearGradient>
                         </Pressable>
-
-                        {/* <Pressable onPress={() => handleSelectMode('Takeaway')}>
-                            <LinearGradient
-                                colors={['#DD7E33', '#D95C20']}
-                                start={{ x: 0, y: 0 }}
-                                end={{ x: 1, y: 0 }}
-                                style={styles.modeButton}
-                            >
-                                <View style={styles.iconWrapper}>
-                                    <Ionicons name="bag-handle" size={100} color="#fff" />
-                                </View>
-                                <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.headingXX} color="#fff">
-                                    Takeaway
-                                </CustomText>
-                            </LinearGradient>
-                        </Pressable> */}
                     </View>
                 </View>
 
                 {/* Footer */}
                 <View style={styles.footer}>
-                    <View style={styles.poweredContainer}>
+                    <Pressable
+                        onLongPress={handleLogoLongPress}
+                        delayLongPress={3000}
+                        style={styles.poweredContainer}
+                        // @ts-ignore
+                        onContextMenu={(e: any) => e.preventDefault()}
+                    >
                         <CustomText fontSize={theme.fontSize.heading} color='#666'>
                             Powered By
                         </CustomText>
@@ -220,7 +204,7 @@ export default function ModeSelectionScreen() {
                             style={styles.devourinLogo}
                             resizeMode="contain"
                         />
-                    </View>
+                    </Pressable>
                 </View>
             </SafeAreaView>
 
@@ -285,10 +269,6 @@ const styles = StyleSheet.create({
         height: 280,
         justifyContent: 'center',
         alignItems: 'center',
-        ...(Platform.OS === 'web' ? {
-            userSelect: 'none',
-            WebkitUserSelect: 'none',
-        } : {}),
     },
     restaurantLogo: {
         width: '100%',
@@ -348,7 +328,11 @@ const styles = StyleSheet.create({
         opacity: 0.8,
         padding: theme.spacing.sm,
         paddingHorizontal: theme.spacing.xl,
-        borderRadius: theme.border.xl
+        borderRadius: theme.border.xl,
+        ...(Platform.OS === 'web' ? {
+            userSelect: 'none',
+            WebkitUserSelect: 'none',
+        } : {}),
     },
     devourinLogo: {
         width: 200,
