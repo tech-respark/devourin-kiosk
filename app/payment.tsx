@@ -10,11 +10,11 @@ import { useDispatch, useSelector } from 'react-redux';
 import CustomText from '../components/CustomText';
 import { clearCart, selectCartItems } from '../src/store/cartSlice';
 import { clearCustomerDetails, selectApplicationConfigs, selectMobileSettings } from '../src/store/userSlice';
-import { calculateCartTotals } from '../src/utils/taxCalculation';
 import { theme } from '../src/styles/theme';
 import { buildPluralOrderPayload } from '../src/utils/Cart';
 import { useEnvironment } from '../src/utils/Constants';
 import { loadRazorpayScript, makeAPIRequest } from '../src/utils/Helper';
+import { calculateCartTotals } from '../src/utils/taxCalculation';
 
 type LoaderState = 'idle' | 'payment' | 'placing' | 'success' | 'error';
 
@@ -39,6 +39,7 @@ export default function PaymentSelection() {
         sgst: cartTotals.taxBreakdown.sgst,
         igst: cartTotals.taxBreakdown.igst,
         vat: cartTotals.taxBreakdown.vat,
+        pc: cartTotals.taxBreakdown.pc,
     };
 
     const handleSuccess = async (data: any, razorResp: any) => {
@@ -192,6 +193,12 @@ export default function PaymentSelection() {
                             <View style={styles.breakdownRow}>
                                 <CustomText color="#888" fontSize={theme.fontSize.medium}>VAT {cartTotals.isReverseCalculation ? '(Incl.)' : ''}</CustomText>
                                 <CustomText fontFamily={theme.fonts.Medium} color="#444">{currency}{breakdown.vat.toFixed(2)}</CustomText>
+                            </View>
+                        )}
+                        {breakdown.pc > 0 && (
+                            <View style={styles.breakdownRow}>
+                                <CustomText color="#888" fontSize={theme.fontSize.medium}>Packing Charges</CustomText>
+                                <CustomText fontFamily={theme.fonts.Medium} color="#444">{currency}{breakdown.pc.toFixed(2)}</CustomText>
                             </View>
                         )}
                     </View>

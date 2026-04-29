@@ -1,8 +1,8 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import SimpleLineIcons from '@expo/vector-icons/SimpleLineIcons';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Image } from 'expo-image';
 import { FlatList, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
@@ -12,7 +12,7 @@ import { CancelOrderModal } from '../components/CancelOrderModal';
 import CustomText from '../components/CustomText';
 import { ItemCard } from '../components/ItemCard';
 import { addToCart, clearCart, decrementFromCart, selectCartItems, selectCartSubtotal } from '../src/store/cartSlice';
-import { selectAddOnItems, selectOrganisedMenuItems, selectItemImages } from '../src/store/menuSlice';
+import { selectAddOnItems, selectItemImages, selectOrganisedMenuItems } from '../src/store/menuSlice';
 import { selectMobileSettings } from '../src/store/userSlice';
 import { theme } from '../src/styles/theme';
 
@@ -74,6 +74,7 @@ export default function MenuDashboard() {
             igst: item.igst || 0,
             vat: item.vat || 0,
             sc: item.sc || 0,
+            pc: item.pc || 0,
         }));
     };
 

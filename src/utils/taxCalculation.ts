@@ -15,6 +15,7 @@ export const calculateItemTotals = (
     const cgst = item.cgst || 0;
     const vat = item.vat || 0;
     const sc = 0; // Explicitly set to 0 as per request
+    const pcAmount = (item as any).pc || 0;
 
     const totalTaxPercentage = sgst + cgst + sc + vat;
 
@@ -38,7 +39,7 @@ export const calculateItemTotals = (
     }
 
     let finalItemPrice = grossPrice;
-    let itemBasePrice = grossPrice; // This will hold the "Net" price for subtotal display
+    let itemBasePrice = grossPrice;
 
     // For reverse calculation, the shown subtotal MUST be the base price (tempBase)
     // We also calculate what portion of that base belongs to the main item vs addons
@@ -70,7 +71,7 @@ export const calculateItemTotals = (
             }
         }
         itemBasePrice = grossPrice; // Show inclusive total as subtotal as per request
-        
+
         // Ratio based split of base price between item and addons (STILL NEEDED for backend)
         const itemRatio = grossPrice > 0 ? ((menuPrice * item.quantity) / grossPrice) : 1;
         itemNetBase = tempBase * itemRatio;
@@ -85,9 +86,11 @@ export const calculateItemTotals = (
         addonNetBase = addOnTotalPrice;
     }
 
+    // Add Fixed Charges (PC, DC) - per item instance
+    const totalPc = pcAmount * item.quantity;
+    finalItemPrice += totalPc;
+
     // Calculate tax breakdown based on the appropriate base
-    // If reverse calculation, use tempBase (net base) to get actual tax amounts
-    // If forward calculation, use grossPrice (the input base)
     const calculationBase = isReverseCalculation ? tempBase : grossPrice;
 
     const taxBreakdown = {
@@ -95,7 +98,8 @@ export const calculateItemTotals = (
         sgst: (calculationBase * sgst) / 100,
         cgst: (calculationBase * cgst) / 100,
         vat: (calculationBase * vat) / 100,
-        igst: 0, 
+        pc: totalPc, // Now a fixed amount
+        igst: 0,
     };
 
     return {
@@ -121,7 +125,8 @@ export const calculateCartTotals = (cartItems: CartItem[], applicationConfigs: a
         sgst: 0,
         cgst: 0,
         vat: 0,
-        igst: 0
+        igst: 0,
+        pc: 0,
     };
 
     cartItems.forEach(item => {
@@ -133,6 +138,7 @@ export const calculateCartTotals = (cartItems: CartItem[], applicationConfigs: a
         totalTaxBreakdown.cgst += taxBreakdown.cgst;
         totalTaxBreakdown.vat += taxBreakdown.vat;
         totalTaxBreakdown.igst += taxBreakdown.igst;
+        totalTaxBreakdown.pc += (taxBreakdown as any).pc || 0;
     });
 
     return {

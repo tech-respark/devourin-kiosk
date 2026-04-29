@@ -1,11 +1,10 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useState } from 'react';
 import {
     Platform,
-    Pressable,
     ScrollView,
     StyleSheet,
     TextInput,
@@ -186,6 +185,7 @@ export const AddOnPortionModal: React.FC<AddOnPortionModalProps> = ({ visible, i
                 igst: item.igst || 0,
                 vat: item.vat || 0,
                 sc: item.sc || 0,
+                pc: item.pc || 0,
             },
             quantity,
             remark: instructions.trim() || undefined,

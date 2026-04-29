@@ -37,6 +37,7 @@ export interface CartItem {
     igst?: number;
     vat?: number;
     sc?: number;
+    pc?: number;
 }
 
 export interface CartState {

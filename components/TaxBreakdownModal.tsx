@@ -2,9 +2,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
 import { Modal, Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
-import { theme } from '../src/styles/theme';
 import { useAppSelector } from '../src/store/hooks';
 import { selectApplicationConfigs, selectMobileSettings } from '../src/store/userSlice';
+import { theme } from '../src/styles/theme';
 import { calculateCartTotals } from '../src/utils/taxCalculation';
 import CustomText from './CustomText';
 
@@ -27,6 +27,7 @@ export const TaxBreakdownModal: React.FC<TaxBreakdownModalProps> = ({ visible, o
         sgst: data.taxBreakdown.sgst,
         igst: data.taxBreakdown.igst,
         vat: data.taxBreakdown.vat,
+        pc: (data.taxBreakdown as any).pc || 0,
         total: data.grandTotal
     };
 
@@ -46,7 +47,7 @@ export const TaxBreakdownModal: React.FC<TaxBreakdownModalProps> = ({ visible, o
                             <CustomText color="#666">Item Subtotal</CustomText>
                             <CustomText fontFamily={theme.fonts.SemiBold}>{currency}{breakdown.subtotal.toFixed(2)}</CustomText>
                         </View>
- 
+
                         {breakdown.cgst > 0 && (
                             <View style={styles.row}>
                                 <CustomText color="#666">CGST {data.isReverseCalculation ? '(Incl.)' : ''}</CustomText>
@@ -71,7 +72,12 @@ export const TaxBreakdownModal: React.FC<TaxBreakdownModalProps> = ({ visible, o
                                 <CustomText fontFamily={theme.fonts.Medium}>{currency}{breakdown.vat.toFixed(2)}</CustomText>
                             </View>
                         )}
- 
+                        {breakdown.pc > 0 && (
+                            <View style={styles.row}>
+                                <CustomText color="#666">Packing Charges</CustomText>
+                                <CustomText fontFamily={theme.fonts.Medium}>{currency}{breakdown.pc.toFixed(2)}</CustomText>
+                            </View>
+                        )}
                         <View style={[styles.row, styles.totalRow]}>
                             <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.large}>Total Payable</CustomText>
                             <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.large} color={theme.colors.theme}>{currency}{breakdown.total.toFixed(2)}</CustomText>
