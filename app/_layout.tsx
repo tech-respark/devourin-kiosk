@@ -10,7 +10,9 @@ import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
 import { persistor, store } from '../src/store';
 import { KioskManager } from '../components/KioskManager';
-import { Platform, View } from 'react-native';
+import { Platform, View, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import CustomText from '../components/CustomText';
 
 // Web-only global refinements for a Native Kiosk feel
 if (Platform.OS === 'web' && typeof document !== 'undefined') {
@@ -36,6 +38,42 @@ if (Platform.OS === 'web' && typeof document !== 'undefined') {
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
+
+const toastConfig = {
+  printerError: ({ text1, props }: any) => (
+    <View style={{
+      height: 60,
+      width: '90%',
+      backgroundColor: '#FF5252',
+      borderRadius: 12,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 15,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 4.65,
+      elevation: 8,
+    }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+        <Ionicons name="print" size={24} color="#fff" />
+        <CustomText style={{ marginLeft: 10, color: '#fff', fontWeight: 'bold' }}>{text1}</CustomText>
+      </View>
+      <TouchableOpacity 
+        onPress={() => props.onRetry()}
+        style={{
+          backgroundColor: 'rgba(255,255,255,0.2)',
+          paddingVertical: 6,
+          paddingHorizontal: 12,
+          borderRadius: 8,
+        }}
+      >
+        <CustomText style={{ color: '#fff', fontWeight: 'bold' }}>REFRESH</CustomText>
+      </TouchableOpacity>
+    </View>
+  )
+};
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
@@ -76,7 +114,7 @@ export default function RootLayout() {
           </Stack>
         </KioskManager>
         <StatusBar style="dark" />
-        <Toast />
+        <Toast config={toastConfig} />
       </PersistGate>
     </Provider>
   );

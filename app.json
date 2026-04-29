@@ -23,7 +23,13 @@
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/icons/app_icon.png"
+      "favicon": "./assets/icons/app_icon.png",
+      "name": "Devourin Kiosk",
+      "shortName": "Devourin",
+      "themeColor": "#D95C20",
+      "backgroundColor": "#ffffff",
+      "display": "standalone",
+      "orientation": "portrait"
     },
     "plugins": [
       "expo-router",

@@ -64,7 +64,7 @@ export default function LoginScreen() {
     const handleLoginPress = async () => {
         const ipString = `${ipParts.part1}.${ipParts.part2}.${ipParts.part3}.${ipParts.part4}`;
         if (!ipParts.part1 || !ipParts.part2 || !ipParts.part3 || !ipParts.part4 || !restaurantName) {
-            Toast.show({ type: "warning", text1: "Please enter valid IP and Restaurant Name" });
+            Toast.show({ type: "error", text1: "Please enter valid IP and Restaurant Name" });
             return;
         }
         const domain = IP_DOMAIN_MAP[ipString] ?? ipString;
@@ -105,7 +105,7 @@ export default function LoginScreen() {
 
     const handleBranchSubmit = async () => {
         if (!selectedBranch) {
-            Toast.show({ type: "warning", text1: "Please select a branch" });
+            Toast.show({ type: "error", text1: "Please select a branch" });
             return;
         }
 

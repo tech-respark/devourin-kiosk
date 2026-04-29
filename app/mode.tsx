@@ -1,9 +1,11 @@
+import { getLocalPrinterBaseUrl, makeAPIRequest } from '@/src/utils/Helper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, BackHandler, Image, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Toast from 'react-native-toast-message';
 import { useDispatch, useSelector } from 'react-redux';
 import { AdminModal } from '../components/AdminModal';
 import CustomText from '../components/CustomText';
@@ -25,6 +27,32 @@ export default function ModeSelectionScreen() {
     // Admin Modal Logic
     const [logoClickCount, setLogoClickCount] = useState(0);
     const [showAdminModal, setShowAdminModal] = useState(false);
+    const [isPrinterOffline, setIsPrinterOffline] = useState(false);
+    const [isPrinterChecking, setIsPrinterChecking] = useState(false);
+
+    const checkPrinterStatus = async () => {
+        if (__DEV__) return;
+        const url = `${getLocalPrinterBaseUrl()}/listprinters`
+        setIsPrinterChecking(true);
+        setIsPrinterOffline(true);
+        Toast.hide();
+
+        try {
+            const response = await makeAPIRequest(url, null, "GET", {}, "Printer Error", false);
+            if (!response) {
+                setIsPrinterOffline(true);
+                Toast.show({ type: 'printerError', text1: 'Printer Offline', autoHide: false, props: { onRetry: checkPrinterStatus } });
+            } else {
+                setIsPrinterOffline(false);
+                Toast.hide();
+            }
+        } catch (e) {
+            setIsPrinterOffline(true);
+            Toast.show({ type: 'printerError', text1: 'Printer Offline', autoHide: false, props: { onRetry: checkPrinterStatus } });
+        } finally {
+            setIsPrinterChecking(false);
+        }
+    };
 
     useEffect(() => {
         // Prevent back navigation on Android
@@ -33,7 +61,7 @@ export default function ModeSelectionScreen() {
         // Prevent back navigation on Web
         if (Platform.OS === 'web') {
             window.history.pushState(null, '', window.location.href);
-            window.onpopstate = function () {
+            window.onpopstate = () => {
                 window.history.pushState(null, '', window.location.href);
             };
         }
@@ -46,6 +74,7 @@ export default function ModeSelectionScreen() {
             setIsConfigured(true);
         };
         initializeSystem();
+        checkPrinterStatus();
 
         return () => {
             backHandler.remove();
@@ -103,6 +132,13 @@ export default function ModeSelectionScreen() {
 
     return (
         <View style={styles.mainContainer}>
+            {/* Blocking Overlay if printer is offline */}
+            {isPrinterOffline && (
+                <View style={styles.blockOverlay}>
+                    {isPrinterChecking && <ActivityIndicator size="large" color={theme.colors.theme} />}
+                </View>
+            )}
+
             {/* Background Layer */}
             <View style={styles.backgroundLayer}>
                 <Image
@@ -211,6 +247,17 @@ const styles = StyleSheet.create({
     mainContainer: {
         flex: 1,
         backgroundColor: '#FAFAFA'
+    },
+    blockOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(255,255,255,0.4)',
+        zIndex: 999,
+        alignItems: 'center',
+        justifyContent: 'center'
     },
     backgroundLayer: {
         position: 'absolute',
