@@ -216,7 +216,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: theme.spacing.lg,
+        paddingHorizontal: theme.spacing.xl,
         paddingVertical: theme.spacing.md,
         backgroundColor: theme.colors.white,
         borderBottomWidth: 1,
