@@ -2,7 +2,7 @@ import { useState } from 'react';
 import Toast from 'react-native-toast-message';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { setAddOnCategories, setAddOnItems, setCategories, setItemImages, setMenuItems, setOrganisedMenuItems } from '../store/menuSlice';
-import { selectBranchId, setBranchConfigs, setMobileSettings } from '../store/userSlice';
+import { selectBranchId, setApplicationConfigs, setBranchConfigs, setMobileSettings } from '../store/userSlice';
 import { NETWORK_ERROR, useEnvironment } from '../utils/Constants';
 import { groupPortions, makeAPIRequest, organizeMenu } from '../utils/Helper';
 
@@ -98,6 +98,14 @@ export const useInitialDataFetch = () => {
         }
     };
 
+    const getApplicationConfigs = async () => {
+        const url = apiBaseUrl + `getApplicationConfigs`;
+        const response = await makeAPIRequest(url, null, "GET");
+        if (response) {
+            dispatch(setApplicationConfigs(response));
+        }
+    };
+
     // Initial setup orchestration
     const callInitialSetUpAPIAsync = async () => {
         setLoading(true);
@@ -109,6 +117,7 @@ export const useInitialDataFetch = () => {
                 getAddOnCategories(),
                 getMobileSettings(),
                 getBranchConfigs(),
+                getApplicationConfigs(),
                 getItemImages()
             ]);
         } catch (error) {

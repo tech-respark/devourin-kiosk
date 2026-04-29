@@ -16,6 +16,7 @@ interface UserState {
     branchConfigs: any | null;
     taxes: any | null;
     customerDetails: CustomerDetails | null;
+    applicationConfigs: any | null;
 }
 
 const initialState: UserState = {
@@ -27,6 +28,7 @@ const initialState: UserState = {
     branchConfigs: null,
     taxes: null,
     customerDetails: null,
+    applicationConfigs: null,
 };
 
 const userSlice = createSlice({
@@ -60,6 +62,9 @@ const userSlice = createSlice({
         clearCustomerDetails: (state) => {
             state.customerDetails = null;
         },
+        setApplicationConfigs: (state, action: PayloadAction<any>) => {
+            state.applicationConfigs = action.payload;
+        },
         logoutStaff: (state) => {
             state.userData = null;
         },
@@ -85,6 +90,7 @@ export const {
     setTaxes,
     setCustomerDetails,
     clearCustomerDetails,
+    setApplicationConfigs,
     logoutStaff,
     resetUser,
 } = userSlice.actions;
@@ -117,5 +123,6 @@ export const selectBranchConfig = (key: string) => (state: any) => {
 
 export const selectTaxes = (state: any) => state.user.taxes;
 export const selectCustomerDetails = (state: any) => state.user.customerDetails;
+export const selectApplicationConfigs = (state: any) => state.user.applicationConfigs;
 
 export default userSlice.reducer;

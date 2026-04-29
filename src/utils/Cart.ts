@@ -1,6 +1,7 @@
 import moment from 'moment';
 import { store } from '../store';
 import { CartItem } from '../store/cartSlice';
+import { calculateCartTotals, calculateItemTotals } from './taxCalculation';
 
 /**
  * Maps a single kiosk cart item to the orderbystaffmobile API item format.
@@ -98,12 +99,10 @@ export const buildKioskOrderPayload = (
     const uniqueId = new Date().getTime().toString();
 
     const orderItems = cartItems.map(item => mapSingleOrderItem(item, staffId));
+    const applicationConfigs = state.user.applicationConfigs;
 
-    // Calculate totals
-    const grandTotal = cartItems.reduce((acc, item) => {
-        const addOnTotal = (item.addOns || []).reduce((a, addon) => a + addon.price * addon.quantity, 0);
-        return acc + (item.price * item.quantity) + addOnTotal;
-    }, 0);
+    // Calculate totals using official logic
+    const { subtotal, grandTotal } = calculateCartTotals(cartItems, applicationConfigs);
     const roundedTotal = Math.round(grandTotal);
 
     // Build payment entry
@@ -216,50 +215,29 @@ export const buildPluralOrderPayload = (
 ) => {
     const state = store.getState();
     const branchId = state.user.branchId;
+    const applicationConfigs = state.user.applicationConfigs;
     const customerDetails = state.user.customerDetails;
     const uniqueId = new Date().getTime().toString();
 
-    // Calculate subtotal and total
-    const subTotal = cartItems.reduce((acc, item) => {
-        const addOnTotal = (item.addOns || []).reduce((a, addon) => a + addon.price * addon.quantity, 0);
-        return acc + (item.price * item.quantity) + addOnTotal;
-    }, 0);
+    const isReverseCalculation = applicationConfigs?.length > 0 && applicationConfigs?.[0].reverseCalculation === 1;
+    const isScInclusive = applicationConfigs?.length > 0 && applicationConfigs?.[0].isScInclusiveInReverseCalc === 1;
 
-    // For now total = subtotal (can add tax logic if needed, but following example)
-    const total = subTotal;
+    // Calculate overall totals
+    const totals = calculateCartTotals(cartItems, applicationConfigs);
 
     const orderITems = cartItems.map(item => {
-        const itemPrice = item.price;
-        const itemQty = item.quantity;
-        const baseItemTotal = itemPrice * itemQty;
-
-        // Addons base total
-        const addOnBaseTotal = (item.addOns || []).reduce((a, ad) => a + ad.price * ad.quantity, 0);
-
-        // Taxes for Item
-        const itemCgst = (baseItemTotal * (item.cgst || 0)) / 100;
-        const itemSgst = (baseItemTotal * (item.sgst || 0)) / 100;
-        const itemIgst = (baseItemTotal * (item.igst || 0)) / 100;
-        const itemVat = (baseItemTotal * (item.vat || 0)) / 100;
-        const itemTotalTax = itemCgst + itemSgst + itemIgst + itemVat;
-
-        // Taxes for Addons
-        const addonTaxTotal = (item.addOns || []).reduce((acc, a) => {
-            const addonBase = a.price * a.quantity;
-            const a_cgst = (addonBase * (a.cgst || 0)) / 100;
-            const a_sgst = (addonBase * (a.sgst || 0)) / 100;
-            const a_igst = (addonBase * (a.igst || 0)) / 100;
-            const a_vat = (addonBase * (a.vat || 0)) / 100;
-            return acc + a_cgst + a_sgst + a_igst + a_vat;
-        }, 0);
+        const { itemSubtotal, itemGrandTotal, taxBreakdown, itemNetBase, addonNetBase } = calculateItemTotals(item, isReverseCalculation, isScInclusive);
+        
+        // Sum individual tax components for itemTax field
+        const itemTotalTax = Object.values(taxBreakdown).reduce((a, b) => a + b, 0);
 
         return {
             id: null,
             orderId: null,
             itemId: item.itemId,
-            quantity: itemQty,
+            quantity: item.quantity,
             attributeId: item.customAttributeId || 0,
-            price: itemPrice,
+            price: item.price,
             kotNo: "",
             served: 0,
             printed: 0,
@@ -285,7 +263,7 @@ export const buildPluralOrderPayload = (
             gms: 0,
             discount: 0,
             pc: 0,
-            sc: 0,
+            sc: item.sc || 0,
             dc: 0,
             attributeName: item.attributeName || "null",
             it: item.isVeg ? 1 : 2,
@@ -303,21 +281,19 @@ export const buildPluralOrderPayload = (
             surCharge: 0,
             vat: item.vat || 0,
             unit: "Qty",
-            itemTotal: baseItemTotal,
-            itemTax: Number((itemTotalTax + addonTaxTotal).toFixed(2)),
-            addonTotal: addOnBaseTotal,
-            itemSc: 0
+            itemTotal: Number(itemNetBase.toFixed(2)),
+            itemTax: Number(itemTotalTax.toFixed(2)),
+            addonTotal: Number(addonNetBase.toFixed(2)),
+            itemSc: taxBreakdown.sc
         };
     });
-
-    const totalWithTax = orderITems.reduce((acc, it: any) => acc + it.itemTotal + it.addonTotal + it.itemTax, 0);
 
     return {
         branchId: Number(branchId),
         eta: 0,
         rating: 0,
-        subTotal,
-        total: Number(totalWithTax.toFixed(2)),
+        subTotal: totals.subtotal,
+        total: Number(totals.grandTotal.toFixed(2)),
         tableNo: 0,
         thirdPartyId: 0,
         currentStatus: {

@@ -8,8 +8,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import { useDispatch, useSelector } from 'react-redux';
 import CustomText from '../components/CustomText';
-import { clearCart, selectCartItems, selectCartTotalWithTaxes } from '../src/store/cartSlice';
-import { clearCustomerDetails, selectMobileSettings } from '../src/store/userSlice';
+import { clearCart, selectCartItems } from '../src/store/cartSlice';
+import { clearCustomerDetails, selectApplicationConfigs, selectMobileSettings } from '../src/store/userSlice';
+import { calculateCartTotals } from '../src/utils/taxCalculation';
 import { theme } from '../src/styles/theme';
 import { buildPluralOrderPayload } from '../src/utils/Cart';
 import { useEnvironment } from '../src/utils/Constants';
@@ -21,41 +22,24 @@ export default function PaymentSelection() {
     const router = useRouter();
     const dispatch = useDispatch();
     const { apiBaseUrl } = useEnvironment();
-    const totalPayable = useSelector(selectCartTotalWithTaxes);
     const cartItems = useSelector(selectCartItems);
     const mobileSettings = useSelector(selectMobileSettings);
+    const applicationConfigs = useSelector(selectApplicationConfigs);
     const currency = mobileSettings?.['currency_symbol'] || '₹';
+
+    const cartTotals = useMemo(() => calculateCartTotals(cartItems as any, applicationConfigs), [cartItems, applicationConfigs]);
+    const totalPayable = cartTotals.grandTotal;
 
     const [loaderState, setLoaderState] = useState<LoaderState>('idle');
     const [loaderText, setLoaderText] = useState('');
 
-    const breakdown = useMemo(() => {
-        let subtotal = 0;
-        let cgst = 0;
-        let sgst = 0;
-        let igst = 0;
-        let vat = 0;
-
-        cartItems.forEach(item => {
-            const itemBase = item.price * (item.quantity || 1);
-            subtotal += itemBase;
-            cgst += (itemBase * (item.cgst || 0)) / 100;
-            sgst += (itemBase * (item.sgst || 0)) / 100;
-            igst += (itemBase * (item.igst || 0)) / 100;
-            vat += (itemBase * (item.vat || 0)) / 100;
-
-            (item.addOns || []).forEach((addon: any) => {
-                const addonBase = addon.price * (addon.quantity || 1);
-                subtotal += addonBase;
-                cgst += (addonBase * (addon.cgst || 0)) / 100;
-                sgst += (addonBase * (addon.sgst || 0)) / 100;
-                igst += (addonBase * (addon.igst || 0)) / 100;
-                vat += (addonBase * (addon.vat || 0)) / 100;
-            });
-        });
-
-        return { subtotal, cgst, sgst, igst, vat };
-    }, [cartItems]);
+    const breakdown = {
+        subtotal: cartTotals.subtotal,
+        cgst: cartTotals.taxBreakdown.cgst,
+        sgst: cartTotals.taxBreakdown.sgst,
+        igst: cartTotals.taxBreakdown.igst,
+        vat: cartTotals.taxBreakdown.vat,
+    };
 
     const handleSuccess = async (data: any, razorResp: any) => {
         setLoaderState('success');
@@ -188,25 +172,25 @@ export default function PaymentSelection() {
 
                         {breakdown.cgst > 0 && (
                             <View style={styles.breakdownRow}>
-                                <CustomText color="#888" fontSize={theme.fontSize.medium}>CGST</CustomText>
+                                <CustomText color="#888" fontSize={theme.fontSize.medium}>CGST {cartTotals.isReverseCalculation ? '(Incl.)' : ''}</CustomText>
                                 <CustomText fontFamily={theme.fonts.Medium} color="#444">{currency}{breakdown.cgst.toFixed(2)}</CustomText>
                             </View>
                         )}
                         {breakdown.sgst > 0 && (
                             <View style={styles.breakdownRow}>
-                                <CustomText color="#888" fontSize={theme.fontSize.medium}>SGST</CustomText>
+                                <CustomText color="#888" fontSize={theme.fontSize.medium}>SGST {cartTotals.isReverseCalculation ? '(Incl.)' : ''}</CustomText>
                                 <CustomText fontFamily={theme.fonts.Medium} color="#444">{currency}{breakdown.sgst.toFixed(2)}</CustomText>
                             </View>
                         )}
                         {breakdown.igst > 0 && (
                             <View style={styles.breakdownRow}>
-                                <CustomText color="#888" fontSize={theme.fontSize.medium}>IGST</CustomText>
+                                <CustomText color="#888" fontSize={theme.fontSize.medium}>IGST {cartTotals.isReverseCalculation ? '(Incl.)' : ''}</CustomText>
                                 <CustomText fontFamily={theme.fonts.Medium} color="#444">{currency}{breakdown.igst.toFixed(2)}</CustomText>
                             </View>
                         )}
                         {breakdown.vat > 0 && (
                             <View style={styles.breakdownRow}>
-                                <CustomText color="#888" fontSize={theme.fontSize.medium}>VAT</CustomText>
+                                <CustomText color="#888" fontSize={theme.fontSize.medium}>VAT {cartTotals.isReverseCalculation ? '(Incl.)' : ''}</CustomText>
                                 <CustomText fontFamily={theme.fonts.Medium} color="#444">{currency}{breakdown.vat.toFixed(2)}</CustomText>
                             </View>
                         )}
