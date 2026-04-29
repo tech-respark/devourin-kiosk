@@ -112,7 +112,7 @@ export default function LoginScreen() {
         const ipString = `${ipParts.part1}.${ipParts.part2}.${ipParts.part3}.${ipParts.part4}`;
         const domain = IP_DOMAIN_MAP[ipString] ?? ipString;
         const dbName = restaurantName.trim().toLowerCase();
-        const baseUrl = `https://${domain}:8080/nebula-services-1.6/${dbName}/`;
+        const baseUrl = `https://${domain}/nebula-services-1.6/${dbName}/`;
 
         if (await checkBranchValidity(baseUrl, selectedBranch.branchId)) {
             dispatch(setBranchId(selectedBranch.branchId.toString()));
