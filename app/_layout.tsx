@@ -21,6 +21,8 @@ if (Platform.OS === 'web' && typeof document !== 'undefined') {
     ${!__DEV__ ? `
     * {
       touch-action: pan-y;
+      user-select: none;
+      -webkit-user-select: none;
     }
     body {
       overflow: hidden;
@@ -31,9 +33,32 @@ if (Platform.OS === 'web' && typeof document !== 'undefined') {
       outline: none !important;
       box-shadow: none !important;
       -webkit-tap-highlight-color: transparent;
+      user-select: text;
+      -webkit-user-select: text;
     }
   `;
   document.head.appendChild(style);
+
+  // Disable right-click context menu for PWA security
+  document.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+  }, false);
+
+  // Request fullscreen on the very first interaction to ensure kiosk feel from start
+  const requestFullscreen = () => {
+    const docElm = document.documentElement;
+    if (docElm.requestFullscreen) {
+      docElm.requestFullscreen().catch(() => {
+        // Silently fail if blocked or already fullscreen
+      });
+    }
+    // Remove listener after first successful or attempted trigger
+    document.removeEventListener('mousedown', requestFullscreen);
+    document.removeEventListener('touchstart', requestFullscreen);
+  };
+
+  document.addEventListener('mousedown', requestFullscreen);
+  document.addEventListener('touchstart', requestFullscreen);
 }
 
 // Keep the splash screen visible while we fetch resources

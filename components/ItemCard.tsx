@@ -59,9 +59,9 @@ export const ItemCard: React.FC<ItemCardProps> = ({
             <TouchableOpacity activeOpacity={0.85} onPress={handleAddPress} style={styles.imageWrapper}>
                 <View style={[styles.imagePlaceholder, { backgroundColor: imageColor }]}>
                     {imageUrl ? (
-                        <Image source={{ uri: imageUrl }} style={styles.actualImage} resizeMode="cover" />
+                        <Image source={{ uri: imageUrl }} style={styles.actualImage} />
                     ) : (
-                        <Ionicons name='fast-food-outline' size={60} color={theme.colors.theme} />
+                        <Ionicons name='restaurant-outline' size={60} color={theme.colors.theme} />
                     )}
                 </View>
                 {hasAddOnOrPortions && (

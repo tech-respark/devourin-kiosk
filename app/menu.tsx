@@ -1,5 +1,4 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import SimpleLineIcons from '@expo/vector-icons/SimpleLineIcons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -153,7 +152,15 @@ export default function MenuDashboard() {
                                         }}
                                     >
                                         <View style={[styles.categoryIconBg, isActive && styles.categoryIconBgActive]}>
-                                            <SimpleLineIcons name='cup' size={theme.fontSize.headingX} color={isActive ? theme.colors.theme : 'gray'} />
+                                            {cat.imagePath ? (
+                                                <Image
+                                                    source={{ uri: cat.imagePath }}
+                                                    style={{ width: '100%', height: '100%', borderRadius: 10 }}
+                                                    contentFit="cover"
+                                                />
+                                            ) : (
+                                                <Ionicons name='restaurant-outline' size={theme.fontSize.headingXX} color={isActive ? theme.colors.theme : 'gray'} />
+                                            )}
                                         </View>
                                         <CustomText
                                             fontFamily={theme.fonts.Medium}
@@ -191,7 +198,7 @@ export default function MenuDashboard() {
                                     imageUrl={itemImages?.[item.itemId]}
                                     quantity={getItemQuantity(item.itemId)}
                                     hasAddOnOrPortions={hasAddOnOrPortions(item)}
-                                    maxWidth={'48.5%'}
+                                    maxWidth={'48%'}
                                     onAdd={() => handleAddToCart(item)}
                                     onRemove={() => handleRemoveFromCart(item)}
                                     onOpenModal={() => openModal(item)}
@@ -238,7 +245,7 @@ const styles = StyleSheet.create({
         borderBottomWidth: 1,
         borderBottomColor: '#F0F0F0',
         zIndex: 10,
-        marginLeft: 110,
+        marginLeft: 150,
     },
     posBadge: {
         marginBottom: theme.spacing.xl,
@@ -264,7 +271,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
     },
     categoriesSection: {
-        width: 110,
+        width: 150,
         backgroundColor: theme.colors.white,
         paddingBottom: theme.spacing.xl,
         alignItems: 'center',
@@ -279,6 +286,7 @@ const styles = StyleSheet.create({
     categoryScroll: {
         alignItems: 'center',
         paddingBottom: theme.spacing.xxxl,
+        width: '100%',
     },
     categoryPill: {
         alignItems: 'center',
@@ -288,8 +296,9 @@ const styles = StyleSheet.create({
         borderRadius: theme.border.md,
         padding: theme.spacing.sm,
         marginBottom: theme.spacing.lg,
-        width: 90,
-        height: 90,
+        width: 130,
+        height: 130,
+        boxShadow: '0 1px 2px 1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
     },
     categoryPillActive: {
         borderColor: theme.colors.theme,
@@ -297,9 +306,11 @@ const styles = StyleSheet.create({
         backgroundColor: theme.colors.theme_light2,
     },
     categoryIconBg: {
-        backgroundColor: '#F3F6FB',
-        borderRadius: 100,
-        padding: 10,
+        width: 110,
+        height: 90,
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 5,
     },
     categoryIconBgActive: {
         backgroundColor: '#FCF1E4',
@@ -312,7 +323,7 @@ const styles = StyleSheet.create({
         flex: 1,
         paddingHorizontal: theme.spacing.md,
         paddingTop: theme.spacing.md,
-        marginLeft: 110,
+        marginLeft: 150,
         backgroundColor: theme.colors.background,
     },
     sectionTitle: {

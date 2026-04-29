@@ -107,6 +107,7 @@ export interface MenuSubCategory {
     id: number | string;
     title: string;
     items: any[];
+    imagePath?: string;
 }
 
 export interface MenuCategoryType {
@@ -114,6 +115,7 @@ export interface MenuCategoryType {
     title: string;
     subcategories: MenuSubCategory[];
     items: any[];
+    imagePath?: string;
 }
 
 export const groupPortions = (items: any[]) => {
@@ -153,7 +155,8 @@ export const organizeMenu = (groupedItems: any[], categories: any[]) => {
             id: parent.itemCategoryId,
             title: parent.itemCategoryName,
             subcategories: [],
-            items: []
+            items: [],
+            imagePath: parent.imagePath
         };
         if (childSubCats.length > 0) {
             childSubCats.forEach(sub => {
@@ -163,6 +166,7 @@ export const organizeMenu = (groupedItems: any[], categories: any[]) => {
                         id: sub.itemCategoryId,
                         title: sub.itemCategoryName,
                         items: subItems.sort((a, b) => (a.index ?? 0) - (b.index ?? 0)),
+                        imagePath: sub.imagePath
                     })
                 }
             });

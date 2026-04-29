@@ -1,5 +1,4 @@
 import { OTA_VERSION } from '@/constants/Constants';
-import { IP_DOMAIN_MAP } from '@/src/utils/Constants';
 import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -28,7 +27,7 @@ export default function LoginScreen() {
     const dispatch = useDispatch();
     const router = useRouter();
 
-    const [ipParts, setIpParts] = useState({ part1: '', part2: '', part3: '', part4: '' });
+    const [domain, setDomain] = useState('');
     const [restaurantName, setRestaurantName] = useState('');
     const [loading, setLoading] = useState(false);
 
@@ -38,47 +37,31 @@ export default function LoginScreen() {
     const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
 
     const inputRefs = {
-        part1: useRef<TextInput>(null),
-        part2: useRef<TextInput>(null),
-        part3: useRef<TextInput>(null),
-        part4: useRef<TextInput>(null),
+        domain: useRef<TextInput>(null),
         dbName: useRef<TextInput>(null),
     };
 
     useEffect(() => {
         // Auto-focus first input
-        setTimeout(() => inputRefs.part1.current?.focus(), 100);
+        setTimeout(() => inputRefs.domain.current?.focus(), 100);
     }, []);
 
-    const handleIpChange = (text: string, part: keyof typeof ipParts) => {
-        const cleanText = text.trim();
-        setIpParts(prev => ({ ...prev, [part]: cleanText }));
-
-        if (cleanText.length === 3) {
-            if (part === 'part1') inputRefs.part2.current?.focus();
-            if (part === 'part2') inputRefs.part3.current?.focus();
-            if (part === 'part3') inputRefs.part4.current?.focus();
-            if (part === 'part4') inputRefs.dbName.current?.focus();
-        }
-    };
-
     const handleLoginPress = async () => {
-        const ipString = `${ipParts.part1}.${ipParts.part2}.${ipParts.part3}.${ipParts.part4}`;
-        if (!ipParts.part1 || !ipParts.part2 || !ipParts.part3 || !ipParts.part4 || !restaurantName) {
-            Toast.show({ type: "error", text1: "Please enter valid IP and Restaurant Name" });
+        if (!domain || !restaurantName) {
+            Toast.show({ type: "error", text1: "Please enter valid Domain and Restaurant Name" });
             return;
         }
-        const domain = IP_DOMAIN_MAP[ipString] ?? ipString;
         setLoading(true);
         const dbName = restaurantName.trim().toLowerCase();
-        const baseUrl = `https://${domain}/nebula-services-1.6/${dbName}/`;
+        const baseDomain = domain.trim().toLowerCase().replace(/^https?:\/\//, '');
+        const baseUrl = `https://${baseDomain}/nebula-services-1.6/${dbName}/`;
 
         try {
             const headers = { headers: { "Content-Type": "application/json", app: dbName } };
             const response = await makeAPIRequest(baseUrl + 'getBranchDetails', null, "GET", headers, "Invalid Configuration", true);
 
             if (response) {
-                const domainOrIp = response.applicationDomain || domain;
+                const domainOrIp = response.applicationDomain || baseDomain;
                 dispatch(resetMenu());
                 dispatch(setDbName(dbName));
                 dispatch(setIpAddress(domainOrIp));
@@ -111,10 +94,9 @@ export default function LoginScreen() {
             return;
         }
 
-        const ipString = `${ipParts.part1}.${ipParts.part2}.${ipParts.part3}.${ipParts.part4}`;
-        const domain = IP_DOMAIN_MAP[ipString] ?? ipString;
+        const baseDomain = domain.trim().toLowerCase().replace(/^https?:\/\//, '');
         const dbName = restaurantName.trim().toLowerCase();
-        const baseUrl = `https://${domain}/nebula-services-1.6/${dbName}/`;
+        const baseUrl = `https://${baseDomain}/nebula-services-1.6/${dbName}/`;
 
         if (await checkBranchValidity(baseUrl, selectedBranch.branchId)) {
             dispatch(setBranchId(selectedBranch.branchId.toString()));
@@ -176,32 +158,26 @@ export default function LoginScreen() {
                                     </LinearGradient>
                                 </TouchableOpacity>
                                 <TouchableOpacity onPress={() => setBranchSelectionView(false)} style={styles.backLink}>
-                                    <CustomText color={theme.colors.grayDark}>Back to IP Config</CustomText>
+                                    <CustomText color={theme.colors.grayDark}>Back to Setup</CustomText>
                                 </TouchableOpacity>
                             </View>
                         ) : (
-                            /* IP and Name View */
+                            /* Domain and Name View */
                             <View>
                                 <CustomText fontFamily={theme.fonts.SemiBold} fontSize={theme.fontSize.medium} style={styles.label}>
-                                    IP Configuration
+                                    Domain Name
                                 </CustomText>
-                                <View style={styles.ipRow}>
-                                    {(['part1', 'part2', 'part3', 'part4'] as const).map((part, index) => (
-                                        <View key={part} style={styles.ipInputBox}>
-                                            <TextInput
-                                                ref={inputRefs[part]}
-                                                style={styles.ipInput}
-                                                value={ipParts[part]}
-                                                onChangeText={text => handleIpChange(text, part)}
-                                                keyboardType="number-pad"
-                                                maxLength={3}
-                                                selectTextOnFocus
-                                                placeholder="0"
-                                                placeholderTextColor={'lightgray'}
-                                            />
-                                        </View>
-                                    ))}
-                                </View>
+                                <TextInput
+                                    ref={inputRefs.domain}
+                                    style={styles.dbInput}
+                                    value={domain}
+                                    onChangeText={setDomain}
+                                    placeholder="e.g. dev.godirekt.in"
+                                    autoCapitalize="none"
+                                    placeholderTextColor={'lightgray'}
+                                    returnKeyType="next"
+                                    onSubmitEditing={() => inputRefs.dbName.current?.focus()}
+                                />
 
                                 <CustomText fontFamily={theme.fonts.SemiBold} fontSize={theme.fontSize.medium} style={[styles.label, { marginTop: 20 }]}>
                                     Restaurant Name
@@ -324,26 +300,6 @@ const styles = StyleSheet.create({
     },
     label: {
         marginBottom: 15,
-        color: '#162640',
-    },
-    ipRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        gap: 10,
-    },
-    ipInputBox: {
-        flex: 1,
-        backgroundColor: '#F3F6FB',
-        borderRadius: 15,
-        height: 65,
-        justifyContent: 'center',
-        borderWidth: 1,
-        borderColor: '#EBF2FF',
-    },
-    ipInput: {
-        textAlign: 'center',
-        fontSize: 22,
-        fontFamily: 'Poppins-SemiBold',
         color: '#162640',
     },
     dbInput: {
