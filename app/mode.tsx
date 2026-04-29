@@ -145,8 +145,14 @@ export default function ModeSelectionScreen() {
 
             {/* Main Content Layer */}
             <SafeAreaView style={styles.contentLayer}>
-                {/* Restaurant Logo with Hidden Long Press Handle (5s) */}
-                <Pressable onLongPress={handleLogoLongPress} delayLongPress={3000} style={styles.logoContainer}>
+                {/* Restaurant Logo with Hidden Long Press Handle (3s) */}
+                <Pressable
+                    onLongPress={handleLogoLongPress}
+                    delayLongPress={3000}
+                    style={styles.logoContainer}
+                    // @ts-ignore - onContextMenu is valid for web but not in RN core types
+                    onContextMenu={(e: any) => e.preventDefault()}
+                >
                     <Image
                         source={require('../assets/icons/sihi_logo.png')}
                         style={styles.restaurantLogo}
@@ -279,6 +285,10 @@ const styles = StyleSheet.create({
         height: 280,
         justifyContent: 'center',
         alignItems: 'center',
+        ...(Platform.OS === 'web' ? {
+            userSelect: 'none',
+            WebkitUserSelect: 'none',
+        } : {}),
     },
     restaurantLogo: {
         width: '100%',
