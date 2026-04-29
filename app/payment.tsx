@@ -1,14 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { ActivityIndicator, Image, Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
 import RazorpayCheckout from 'react-native-razorpay';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import { useDispatch, useSelector } from 'react-redux';
 import CustomText from '../components/CustomText';
-import { TaxBreakdownModal } from '../components/TaxBreakdownModal';
 import { clearCart, selectCartItems, selectCartTotalWithTaxes } from '../src/store/cartSlice';
 import { clearCustomerDetails, selectMobileSettings } from '../src/store/userSlice';
 import { theme } from '../src/styles/theme';
@@ -29,13 +28,39 @@ export default function PaymentSelection() {
 
     const [loaderState, setLoaderState] = useState<LoaderState>('idle');
     const [loaderText, setLoaderText] = useState('');
-    const [showTaxModal, setShowTaxModal] = useState(false);
+
+    const breakdown = useMemo(() => {
+        let subtotal = 0;
+        let cgst = 0;
+        let sgst = 0;
+        let igst = 0;
+        let vat = 0;
+
+        cartItems.forEach(item => {
+            const itemBase = item.price * (item.quantity || 1);
+            subtotal += itemBase;
+            cgst += (itemBase * (item.cgst || 0)) / 100;
+            sgst += (itemBase * (item.sgst || 0)) / 100;
+            igst += (itemBase * (item.igst || 0)) / 100;
+            vat += (itemBase * (item.vat || 0)) / 100;
+
+            (item.addOns || []).forEach((addon: any) => {
+                const addonBase = addon.price * (addon.quantity || 1);
+                subtotal += addonBase;
+                cgst += (addonBase * (addon.cgst || 0)) / 100;
+                sgst += (addonBase * (addon.sgst || 0)) / 100;
+                igst += (addonBase * (addon.igst || 0)) / 100;
+                vat += (addonBase * (addon.vat || 0)) / 100;
+            });
+        });
+
+        return { subtotal, cgst, sgst, igst, vat };
+    }, [cartItems]);
 
     const handleSuccess = async (data: any, razorResp: any) => {
         setLoaderState('success');
         setLoaderText('Order Successful!');
 
-        // Convert Razorpay response to x-www-form-urlencoded string
         let verifyPayload = "razorpay_payment_id=" + data.razorpay_payment_id +
             "&razorpay_order_id=" + data.razorpay_order_id +
             "&razorpay_signature=" + data.razorpay_signature;
@@ -50,7 +75,6 @@ export default function PaymentSelection() {
         dispatch(clearCart());
         dispatch(clearCustomerDetails());
 
-        // Pass the actual order ID from Razorpay response to confirmation screen
         router.replace({ pathname: '/confirmation', params: { orderId: razorResp?.app_order_id, token: razorResp?.kot_no } });
     };
 
@@ -70,13 +94,11 @@ export default function PaymentSelection() {
 
         try {
             const payload = buildPluralOrderPayload(cartItems as any);
-            console.log(JSON.stringify(payload))
             const headers = { headers: { 'Content-Type': 'application/json', 'user': 'sadmin1234', 'pwd': 'sadmin1234' } }
             const validateResp = await makeAPIRequest(`${apiBaseUrl}validateOrder`, payload, 'POST', headers);
 
             if (validateResp && validateResp.verified) {
                 setLoaderText('Generating Payment Order...');
-
                 const tempPayload = { ...payload, paymentVendor: 'Razorpay' }
                 const razorResp = await makeAPIRequest(`${apiBaseUrl}razororder1`, tempPayload, 'POST', headers);
 
@@ -86,7 +108,6 @@ export default function PaymentSelection() {
 
                     const options = {
                         ...razorResp,
-                        // Convert to paise for Razorpay
                         amount: Math.round(Number(razorResp.amount) * 100),
                         description: razorResp.description || 'Devourin Kiosk Order',
                         name: razorResp.name || 'Devourin',
@@ -95,7 +116,6 @@ export default function PaymentSelection() {
                     delete (options as any)['callback_url'];
 
                     if (Platform.OS === 'web') {
-                        // WEB FLOW
                         const isScriptLoaded = await loadRazorpayScript();
                         if (!isScriptLoaded) throw new Error('Razorpay script failed to load');
 
@@ -106,7 +126,6 @@ export default function PaymentSelection() {
                         });
                         rzp.open();
                     } else {
-                        // NATIVE FLOW
                         RazorpayCheckout.open(options)
                             .then((response: any) => handleSuccess(response, razorResp))
                             .catch(handleFailure);
@@ -129,7 +148,6 @@ export default function PaymentSelection() {
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
-            {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
                     <Ionicons name="chevron-back" size={20} color={theme.colors.text} />
@@ -139,71 +157,118 @@ export default function PaymentSelection() {
                 <View style={{ width: 100 }} />
             </View>
 
-            {/* Main Content */}
             <View style={styles.mainContent}>
                 <View style={styles.paymentCard}>
-                    <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.heading} style={styles.totalLabel}>
-                        Total Payable Amount
+                    {/* Header: Security Badge */}
+                    <View style={styles.paymentBadge}>
+                        <Ionicons name="card" size={20} color="#fff" />
+                        <CustomText fontFamily={theme.fonts.Bold} color="#fff" style={{ marginLeft: 8, letterSpacing: 0.5 }}>SECURE PAYMENT</CustomText>
+                    </View>
+
+                    <CustomText fontFamily={theme.fonts.SemiBold} color="#666" style={styles.instructionText}>
+                        Please complete your payment using{"\n"}Razorpay to process your order.
                     </CustomText>
-                    <View style={styles.totalRowContainer}>
-                        <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.headingXXXX} color="#D13C25" style={styles.totalValue}>
+
+                    {/* Order Summary Section */}
+                    <View style={styles.summaryContainer}>
+                        <View style={styles.summaryHeader}>
+                            <Ionicons name="receipt-outline" size={18} color={theme.colors.theme} />
+                            <CustomText fontFamily={theme.fonts.Bold} color="#666" style={{ marginLeft: 8 }}>Order Summary</CustomText>
+                        </View>
+
+                        <View style={styles.breakdownRow}>
+                            <CustomText color="#888" fontSize={theme.fontSize.medium}>Items Subtotal</CustomText>
+                            <CustomText fontFamily={theme.fonts.Medium} color="#444">{currency}{breakdown.subtotal.toFixed(2)}</CustomText>
+                        </View>
+
+                        {breakdown.cgst > 0 && (
+                            <View style={styles.breakdownRow}>
+                                <CustomText color="#888" fontSize={theme.fontSize.medium}>CGST</CustomText>
+                                <CustomText fontFamily={theme.fonts.Medium} color="#444">{currency}{breakdown.cgst.toFixed(2)}</CustomText>
+                            </View>
+                        )}
+                        {breakdown.sgst > 0 && (
+                            <View style={styles.breakdownRow}>
+                                <CustomText color="#888" fontSize={theme.fontSize.medium}>SGST</CustomText>
+                                <CustomText fontFamily={theme.fonts.Medium} color="#444">{currency}{breakdown.sgst.toFixed(2)}</CustomText>
+                            </View>
+                        )}
+                        {breakdown.igst > 0 && (
+                            <View style={styles.breakdownRow}>
+                                <CustomText color="#888" fontSize={theme.fontSize.medium}>IGST</CustomText>
+                                <CustomText fontFamily={theme.fonts.Medium} color="#444">{currency}{breakdown.igst.toFixed(2)}</CustomText>
+                            </View>
+                        )}
+                        {breakdown.vat > 0 && (
+                            <View style={styles.breakdownRow}>
+                                <CustomText color="#888" fontSize={theme.fontSize.medium}>VAT</CustomText>
+                                <CustomText fontFamily={theme.fonts.Medium} color="#444">{currency}{breakdown.vat.toFixed(2)}</CustomText>
+                            </View>
+                        )}
+                    </View>
+
+                    {/* Total Amount Display */}
+                    <View style={styles.totalContainer}>
+                        <CustomText color="#888" fontFamily={theme.fonts.Medium} fontSize={theme.fontSize.medium}>Payable Amount</CustomText>
+                        <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.headingXXXX} color="#162640" style={styles.amountText}>
                             {currency}{totalPayable.toFixed(2)}
                         </CustomText>
-                        <TouchableOpacity onPress={() => setShowTaxModal(true)} style={styles.infoIcon}>
-                            <Ionicons name="information-circle-outline" size={32} color={theme.colors.grayDark} />
-                        </TouchableOpacity>
                     </View>
 
                     {/* Pay Button */}
                     <TouchableOpacity
                         onPress={placeOrder}
-                        activeOpacity={0.85}
+                        activeOpacity={0.8}
                         disabled={isLoading}
+                        style={styles.payBtnWrapper}
                     >
                         <LinearGradient
                             colors={['#DD7E33', '#D95C20']}
                             start={{ x: 0, y: 0 }}
                             end={{ x: 1, y: 0 }}
-                            style={styles.payButton}
+                            style={styles.payBtn}
                         >
-                            <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.heading} color={theme.colors.white}>
-                                Continue to payment
-                            </CustomText>
+                            {isLoading ? (
+                                <ActivityIndicator color="#fff" />
+                            ) : (
+                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                    <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.large} color="#fff">PAY NOW</CustomText>
+                                    <Ionicons name="arrow-forward" size={24} color="#fff" style={{ marginLeft: 10 }} />
+                                </View>
+                            )}
                         </LinearGradient>
                     </TouchableOpacity>
+
+                    {/* Security Footnote */}
+                    <View style={styles.securityBox}>
+                        <Ionicons name="shield-checkmark" size={20} color="#4CAF50" />
+                        <CustomText color="#4CAF50" fontFamily={theme.fonts.SemiBold} fontSize={theme.fontSize.small} style={{ marginLeft: 5 }}>
+                            100% SECURE & ENCRYPTED
+                        </CustomText>
+                    </View>
                 </View>
             </View>
 
-            {/* Loading Overlay */}
             {isLoading && (
                 <View style={styles.loadingOverlay}>
-                    {loaderState === 'success' ? (
-                        <Ionicons name="checkmark-circle" size={80} color="#4CAF50" />
-                    ) : (
-                        <ActivityIndicator size="large" color={theme.colors.theme} />
-                    )}
+                    <ActivityIndicator size="large" color={theme.colors.theme} />
                     <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.headingX} color={theme.colors.white} style={{ marginTop: 24 }}>
                         {loaderText}
                     </CustomText>
                 </View>
             )}
-            <TaxBreakdownModal
-                visible={showTaxModal}
-                onClose={() => setShowTaxModal(false)}
-                cartItems={cartItems}
-            />
         </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#FFF' },
+    container: { flex: 1, backgroundColor: '#FAFAFA' },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: theme.spacing.xl,
-        paddingVertical: theme.spacing.md,
+        paddingHorizontal: 40,
+        paddingVertical: 20,
         backgroundColor: '#fff',
         borderBottomWidth: 1,
         borderBottomColor: '#F0F0F0',
@@ -211,79 +276,96 @@ const styles = StyleSheet.create({
     backBtn: {
         flexDirection: 'row',
         alignItems: 'center',
-        borderWidth: 1,
-        borderColor: '#E0E0E0',
+        backgroundColor: '#F8F9FB',
         paddingHorizontal: theme.spacing.md,
         paddingVertical: theme.spacing.sm,
         borderRadius: theme.border.md,
         gap: theme.spacing.xs,
+        width: 100,
     },
     devourinLogo: { width: 200, height: 40 },
-    mainContent: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: theme.spacing.lg, backgroundColor: theme.colors.background },
+    mainContent: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 40,
+        backgroundColor: '#F8F9FB',
+    },
     paymentCard: {
         backgroundColor: '#fff',
-        borderRadius: 40,
-        padding: theme.spacing.xxxl,
-        width: '90%',
-        maxWidth: 700,
-        alignItems: 'center',
-        boxShadow: '0px 10px 30px 0px rgba(0,0,0,0.07)',
-    },
-    totalLabel: { color: '#162640', marginBottom: theme.spacing.md },
-    totalRowContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: theme.spacing.xxxl,
-        gap: 12
-    },
-    totalValue: { marginBottom: 0 },
-    infoIcon: {
-        padding: 4,
-    },
-    selectTitle: { color: '#162640', marginBottom: theme.spacing.xl },
-    methodsRow: {
-        flexDirection: 'row',
+        borderRadius: 45,
+        padding: 45,
         width: '100%',
-        justifyContent: 'center',
-        gap: theme.spacing.lg,
-        marginBottom: theme.spacing.xxxl,
+        maxWidth: 500,
+        alignItems: 'center',
+        ...Platform.select({
+            web: { boxShadow: '0px 25px 60px rgba(0, 0, 0, 0.05)' },
+            default: { elevation: 12 }
+        })
     },
-    methodCard: {
-        flex: 1,
-        maxWidth: 180,
-        aspectRatio: 1,
-        backgroundColor: '#fff',
-        borderWidth: 1,
-        borderColor: '#E0E0E0',
+    paymentBadge: {
+        backgroundColor: '#1A2B48',
+        paddingHorizontal: 25,
+        paddingVertical: 14,
+        borderRadius: 100,
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 35,
+    },
+    instructionText: {
+        textAlign: 'center',
+        color: '#777',
+        lineHeight: 24,
+        fontSize: 16,
+        marginBottom: 35,
+    },
+    summaryContainer: {
+        width: '100%',
+        backgroundColor: '#FBFBFC',
+        padding: 20,
         borderRadius: 20,
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: theme.spacing.md,
+        marginBottom: 30,
     },
-    methodCardSelected: { borderColor: theme.colors.theme, borderWidth: 2 },
-    methodCardDisabled: { backgroundColor: '#F9F9F9', opacity: 0.6 },
-    iconBox: {
-        width: 60,
-        height: 60,
-        borderRadius: 30,
-        backgroundColor: '#F5F5F5',
-        justifyContent: 'center',
+    summaryHeader: {
+        flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: theme.spacing.md,
+        marginBottom: 15,
+        borderBottomWidth: 1,
+        borderBottomColor: '#F0F0F0',
+        paddingBottom: 10,
     },
-    iconBoxSelected: { backgroundColor: '#FFEAD1' },
-    payButton: {
-        width: 400,
-        height: 80,
-        borderRadius: 20,
+    breakdownRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 10,
+    },
+    totalContainer: {
+        alignItems: 'center',
+        marginBottom: 35,
+    },
+    amountText: {
+        marginTop: 5,
+        fontSize: 54,
+    },
+    payBtnWrapper: {
+        width: '100%',
+        marginBottom: 30,
+    },
+    payBtn: {
+        height: 85,
+        borderRadius: 25,
         alignItems: 'center',
         justifyContent: 'center',
-        marginTop: theme.spacing.xxl
+        width: '100%',
+    },
+    securityBox: {
+        flexDirection: 'row',
+        alignItems: 'center',
     },
     loadingOverlay: {
         ...StyleSheet.absoluteFillObject,
-        backgroundColor: 'rgba(0,0,0,0.75)',
+        backgroundColor: 'rgba(22, 38, 64, 0.9)',
         alignItems: 'center',
         justifyContent: 'center',
         zIndex: 999,

@@ -240,8 +240,7 @@ const styles = StyleSheet.create({
     backBtn: {
         flexDirection: 'row',
         alignItems: 'center',
-        borderWidth: 1,
-        borderColor: '#E0E0E0',
+        backgroundColor: '#F8F9FB',
         paddingHorizontal: theme.spacing.md,
         paddingVertical: theme.spacing.sm,
         borderRadius: theme.border.md,
