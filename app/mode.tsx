@@ -11,7 +11,7 @@ import { AdminModal } from '../components/AdminModal';
 import CustomText from '../components/CustomText';
 import { useInitialDataFetch } from '../src/hooks/useInitialDataFetch';
 import { clearCart } from '../src/store/cartSlice';
-import { selectOrganisedMenuItems } from '../src/store/menuSlice';
+import { resetMenu, selectOrganisedMenuItems } from '../src/store/menuSlice';
 import { resetUser } from '../src/store/userSlice';
 import { theme } from '../src/styles/theme';
 
@@ -27,7 +27,6 @@ export default function ModeSelectionScreen() {
     const [isConfigured, setIsConfigured] = useState(organisedMenu && organisedMenu.length > 0);
 
     // Admin Modal Logic
-    const [logoClickCount, setLogoClickCount] = useState(0);
     const [showAdminModal, setShowAdminModal] = useState(false);
     const [isPrinterOffline, setIsPrinterOffline] = useState(false);
     const [isPrinterChecking, setIsPrinterChecking] = useState(false);
@@ -96,15 +95,8 @@ export default function ModeSelectionScreen() {
         router.replace('/menu');
     };
 
-    const handleLogoClick = () => {
-        const newCount = logoClickCount + 1;
-        setLogoClickCount(newCount);
-        if (newCount >= 5) {
-            setShowAdminModal(true);
-            setLogoClickCount(0);
-        }
-        // Auto reset click count if no click for 3 seconds
-        setTimeout(() => setLogoClickCount(0), 3000);
+    const handleLogoLongPress = () => {
+        setShowAdminModal(true);
     };
 
     const handleResync = async () => {
@@ -117,6 +109,7 @@ export default function ModeSelectionScreen() {
     const handleLogout = () => {
         setShowAdminModal(false);
         dispatch(resetUser());
+        dispatch(resetMenu());
         dispatch(clearCart());
         router.replace('/login');
     };
@@ -152,8 +145,8 @@ export default function ModeSelectionScreen() {
 
             {/* Main Content Layer */}
             <SafeAreaView style={styles.contentLayer}>
-                {/* Restaurant Logo with Hidden Click Handle */}
-                <Pressable onPress={handleLogoClick} style={styles.logoContainer}>
+                {/* Restaurant Logo with Hidden Long Press Handle (5s) */}
+                <Pressable onLongPress={handleLogoLongPress} delayLongPress={3000} style={styles.logoContainer}>
                     <Image
                         source={require('../assets/icons/sihi_logo.png')}
                         style={styles.restaurantLogo}

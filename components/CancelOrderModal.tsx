@@ -17,7 +17,6 @@ export const CancelOrderModal: React.FC<CancelOrderModalProps> = ({ visible, onC
     return (
         <View style={[StyleSheet.absoluteFill, { zIndex: 999999 }]}>
             <View style={styles.overlay}>
-                <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
                 <View style={[styles.modalContent, { zIndex: 1000000 }]}>
                     {/* Header */}
                     <View style={styles.header}>

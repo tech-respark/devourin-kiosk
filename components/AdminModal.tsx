@@ -18,7 +18,6 @@ export const AdminModal: React.FC<AdminModalProps> = ({ visible, onClose, onResy
     return (
         <View style={[StyleSheet.absoluteFill, { zIndex: 99999 }]}>
             <View style={styles.overlay}>
-                <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
                 <View style={[styles.modalContent, { zIndex: 100000 }]}>
                     {/* Header */}
                     <View style={styles.header}>

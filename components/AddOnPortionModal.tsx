@@ -200,7 +200,6 @@ export const AddOnPortionModal: React.FC<AddOnPortionModalProps> = ({ visible, i
     return (
         <View style={{ ...StyleSheet.absoluteFillObject, zIndex: 99999 }}>
             <View style={styles.overlay}>
-                <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
                 <View style={styles.container}>
                     {/* Header with Image & Title */}
                     <View style={styles.header}>

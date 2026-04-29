@@ -12,6 +12,7 @@ import Toast from 'react-native-toast-message';
 import { useDispatch } from 'react-redux';
 import CustomText from '../components/CustomText';
 import { setBranchId, setDbName, setIpAddress, setTaxes } from '../src/store/userSlice';
+import { resetMenu } from '../src/store/menuSlice';
 import { theme } from '../src/styles/theme';
 import { checkBranchValidity, makeAPIRequest } from '../src/utils/Helper';
 
@@ -78,6 +79,7 @@ export default function LoginScreen() {
 
             if (response) {
                 const domainOrIp = response.applicationDomain || domain;
+                dispatch(resetMenu());
                 dispatch(setDbName(dbName));
                 dispatch(setIpAddress(domainOrIp));
                 dispatch(setTaxes(response.taxes));

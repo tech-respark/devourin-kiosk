@@ -40,6 +40,14 @@ const menuSlice = createSlice({
         },
         setItemImages: (state, action: PayloadAction<any[]>) => {
             state.itemImages = action.payload;
+        },
+        resetMenu: (state) => {
+            state.menuItems = [];
+            state.organisedMenuItems = [];
+            state.categories = [];
+            state.addOnItems = [];
+            state.addOnCategories = [];
+            state.itemImages = {};
         }
     },
 });
@@ -50,7 +58,8 @@ export const {
     setOrganisedMenuItems,
     setAddOnItems,
     setAddOnCategories,
-    setItemImages
+    setItemImages,
+    resetMenu
 } = menuSlice.actions;
 
 export const selectMenuItems = (state: RootState) => state.menu.menuItems;
