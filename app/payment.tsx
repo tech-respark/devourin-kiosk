@@ -23,6 +23,7 @@ const UPI_PAYMENT_TIMEOUT_SECONDS = 180;
 const UPI_PAYMENT_STATUS_POLL_MS = 3000;
 const UPI_SUCCESS_STATUS = 'QSR_KOT_BILL_SETTLED';
 const UPI_PENDING_STATUS = 'NO_STATUS';
+const UPI_LOGO_URI = require('../assets/icons/upi.png');
 
 export default function PaymentSelection() {
     const router = useRouter();
@@ -276,11 +277,11 @@ export default function PaymentSelection() {
             </View>
 
             <View style={styles.mainContent}>
-                {/* <Image
+                <Image
                     source={require('../assets/icons/sihi_logo.png')}
                     style={styles.sihiLogo}
                     resizeMode="contain"
-                /> */}
+                />
                 <View style={styles.paymentCard}>
                     {/* Header: Security Badge */}
                     <View style={styles.paymentBadge}>
@@ -350,13 +351,8 @@ export default function PaymentSelection() {
                             onPress={() => setSelectedPaymentMethod('upi')}
                             style={[styles.methodCard, selectedPaymentMethod === 'upi' && styles.methodCardSelected]}
                         >
-                            <View style={[styles.methodIcon, selectedPaymentMethod === 'upi' && styles.methodIconSelected]}>
-                                <Ionicons name="qr-code-outline" size={28} color={selectedPaymentMethod === 'upi' ? '#fff' : '#D95C20'} />
-                            </View>
-                            <CustomText fontFamily={theme.fonts.Bold} color="#162640" fontSize={theme.fontSize.medium}>UPI QR</CustomText>
-                            {selectedPaymentMethod === 'upi' && (
-                                <Ionicons name="checkmark-circle" size={22} color="#D95C20" style={styles.methodCheck} />
-                            )}
+                            <Image source={UPI_LOGO_URI} style={styles.upiLogo} resizeMode="contain" />
+                            <CustomText fontFamily={theme.fonts.SemiBold} color={selectedPaymentMethod === 'upi' ? theme.colors.theme : "#162640"} fontSize={theme.fontSize.medium} style={styles.methodTitle}>UPI QR</CustomText>
                         </TouchableOpacity>
 
                         <TouchableOpacity
@@ -367,10 +363,7 @@ export default function PaymentSelection() {
                             <View style={[styles.methodIcon, selectedPaymentMethod === 'other' && styles.methodIconSelected]}>
                                 <Ionicons name="card-outline" size={28} color={selectedPaymentMethod === 'other' ? '#fff' : '#D95C20'} />
                             </View>
-                            <CustomText fontFamily={theme.fonts.Bold} color="#162640" fontSize={theme.fontSize.medium}>Cards & More</CustomText>
-                            {selectedPaymentMethod === 'other' && (
-                                <Ionicons name="checkmark-circle" size={22} color="#D95C20" style={styles.methodCheck} />
-                            )}
+                            <CustomText fontFamily={theme.fonts.SemiBold} color={selectedPaymentMethod === 'other' ? theme.colors.theme : "#162640"} fontSize={theme.fontSize.medium} style={styles.methodTitle}>Cards & More</CustomText>
                         </TouchableOpacity>
                     </View>
 
@@ -511,11 +504,13 @@ const styles = StyleSheet.create({
         padding: theme.spacing.md,
         backgroundColor: '#fff',
         position: 'relative',
+        alignItems: 'center',
         justifyContent: 'center',
     },
     methodCardSelected: {
         borderColor: '#D95C20',
         backgroundColor: '#FFF7F1',
+        borderWidth: 2,
     },
     methodIcon: {
         width: 48,
@@ -526,13 +521,16 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         marginBottom: theme.spacing.md,
     },
+    upiLogo: {
+        width: 160,
+        height: 80,
+        marginBottom: theme.spacing.md,
+    },
+    methodTitle: {
+        textAlign: 'center',
+    },
     methodIconSelected: {
         backgroundColor: '#D95C20',
-    },
-    methodCheck: {
-        position: 'absolute',
-        right: 12,
-        top: 12,
     },
     summaryContainer: {
         width: '100%',
