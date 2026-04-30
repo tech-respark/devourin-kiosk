@@ -1,13 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Image, Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
 import RazorpayCheckout from 'react-native-razorpay';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import { useDispatch, useSelector } from 'react-redux';
 import CustomText from '../components/CustomText';
+import { UpiModal } from '../components/UpiModal';
 import { clearCart, selectCartItems } from '../src/store/cartSlice';
 import { clearCustomerDetails, selectApplicationConfigs, selectMobileSettings } from '../src/store/userSlice';
 import { theme } from '../src/styles/theme';
@@ -17,6 +18,11 @@ import { loadRazorpayScript, makeAPIRequest } from '../src/utils/Helper';
 import { calculateCartTotals } from '../src/utils/taxCalculation';
 
 type LoaderState = 'idle' | 'payment' | 'placing' | 'success' | 'error';
+type PaymentMethod = 'upi' | 'other';
+const UPI_PAYMENT_TIMEOUT_SECONDS = 180;
+const UPI_PAYMENT_STATUS_POLL_MS = 3000;
+const UPI_SUCCESS_STATUS = 'QSR_KOT_BILL_SETTLED';
+const UPI_PENDING_STATUS = 'NO_STATUS';
 
 export default function PaymentSelection() {
     const router = useRouter();
@@ -32,6 +38,12 @@ export default function PaymentSelection() {
 
     const [loaderState, setLoaderState] = useState<LoaderState>('idle');
     const [loaderText, setLoaderText] = useState('');
+    const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod>('upi');
+    const [upiOrderResponse, setUpiOrderResponse] = useState<any>(null);
+    const [upiModalVisible, setUpiModalVisible] = useState(false);
+    const [upiExpiresAt, setUpiExpiresAt] = useState<number | null>(null);
+    const [upiRemainingSeconds, setUpiRemainingSeconds] = useState(UPI_PAYMENT_TIMEOUT_SECONDS);
+    const isPollingUpiStatus = useRef(false);
 
     const breakdown = {
         subtotal: cartTotals.subtotal,
@@ -41,6 +53,75 @@ export default function PaymentSelection() {
         vat: cartTotals.taxBreakdown.vat,
         pc: cartTotals.taxBreakdown.pc,
     };
+
+    useEffect(() => {
+        if (!upiModalVisible || !upiExpiresAt) return;
+
+        const tick = () => {
+            const secondsLeft = Math.max(0, Math.ceil((upiExpiresAt - Date.now()) / 1000));
+            setUpiRemainingSeconds(secondsLeft);
+
+            if (secondsLeft <= 0) {
+                setUpiModalVisible(false);
+                setUpiOrderResponse(null);
+                setUpiExpiresAt(null);
+                Toast.show({
+                    type: 'info',
+                    text1: 'UPI payment expired',
+                    text2: 'Please generate a new QR code to continue.'
+                });
+            }
+        };
+
+        tick();
+        const timer = setInterval(tick, 1000);
+        return () => clearInterval(timer);
+    }, [upiExpiresAt, upiModalVisible]);
+
+    useEffect(() => {
+        if (!upiModalVisible || !upiOrderResponse) return;
+        let isActive = true;
+
+        const pollPaymentStatus = async () => {
+            if (isPollingUpiStatus.current) return;
+            isPollingUpiStatus.current = true;
+            const orderId = upiOrderResponse?.app_order_id;
+            const statusResp = await makeAPIRequest(`${apiBaseUrl}kiosk/payment/status?orderId=${orderId}`, null, 'GET');
+            isPollingUpiStatus.current = false;
+            const paymentStatus = statusResp?.status || statusResp?.data?.status;
+            if (!isActive || !paymentStatus) return;
+            if (paymentStatus === UPI_PENDING_STATUS) {
+                return;
+            }
+            if (paymentStatus === UPI_SUCCESS_STATUS) {
+                setLoaderState('success');
+                setLoaderText('Order Successful!');
+                setUpiModalVisible(false);
+                dispatch(clearCart());
+                dispatch(clearCustomerDetails());
+                router.replace({ pathname: '/confirmation', params: { orderId: upiOrderResponse?.app_order_id, token: upiOrderResponse?.kot_no } });
+                return;
+            }
+            setUpiModalVisible(false);
+            setUpiOrderResponse(null);
+            setUpiExpiresAt(null);
+            setLoaderState('error');
+            setLoaderText('');
+            Toast.show({
+                type: 'error',
+                text1: 'UPI payment failed',
+                text2: 'Please try another payment method or generate a new QR code.'
+            });
+        };
+
+        pollPaymentStatus();
+        const pollTimer = setInterval(pollPaymentStatus, UPI_PAYMENT_STATUS_POLL_MS);
+
+        return () => {
+            isActive = false;
+            clearInterval(pollTimer);
+        };
+    }, [apiBaseUrl, dispatch, router, upiModalVisible, upiOrderResponse]);
 
     const handleSuccess = async (data: any, razorResp: any) => {
         setLoaderState('success');
@@ -73,60 +154,112 @@ export default function PaymentSelection() {
         });
     };
 
-    const placeOrder = async () => {
+    const createRazorOrder = async () => {
         setLoaderState('placing');
         setLoaderText('Validating Order...');
 
+        const payload = buildPluralOrderPayload(cartItems as any);
+        const headers = { headers: { 'Content-Type': 'application/json', 'user': 'sadmin1234', 'pwd': 'sadmin1234' } }
+        const validateResp = await makeAPIRequest(`${apiBaseUrl}validateOrder`, payload, 'POST', headers);
+
+        if (!validateResp?.verified) {
+            throw new Error('Order validation failed');
+        }
+
+        setLoaderText('Generating Payment Order...');
+        const tempPayload = { ...payload, paymentVendor: 'Razorpay', isQRPayment: selectedPaymentMethod === 'upi' ? 1 : 0 };
+        const razorResp = await makeAPIRequest(`${apiBaseUrl}razororder1`, tempPayload, 'POST', headers);
+
+        if (!razorResp) {
+            throw new Error('Failed to create Razorpay order');
+        }
+
+        return razorResp;
+    };
+
+    const openRazorpayCheckout = async (razorResp: any) => {
+        if (!razorResp?.order_id) {
+            throw new Error('Failed to create Razorpay order');
+        }
+
+        setLoaderState('payment');
+        setLoaderText('Waiting for Payment...');
+
+        const options = {
+            ...razorResp,
+            amount: Math.round(Number(razorResp.amount) * 100),
+            description: razorResp.description || 'Devourin Kiosk Order',
+            name: razorResp.name || 'Devourin',
+            theme: { color: razorResp.theme?.color || '#D95C20' },
+        };
+        delete (options as any)['callback_url'];
+
+        if (Platform.OS === 'web') {
+            const isScriptLoaded = await loadRazorpayScript();
+            if (!isScriptLoaded) throw new Error('Razorpay script failed to load');
+
+            const rzp = new (window as any).Razorpay({
+                ...options,
+                handler: (response: any) => handleSuccess(response, razorResp),
+                modal: { ondismiss: () => handleFailure({ description: 'Payment Dismissed' }) }
+            });
+            rzp.open();
+        } else {
+            RazorpayCheckout.open(options)
+                .then((response: any) => handleSuccess(response, razorResp))
+                .catch(handleFailure);
+        }
+    };
+
+    const handleUpiPayment = async () => {
+        const now = Date.now();
+        if (upiOrderResponse && upiExpiresAt && upiExpiresAt > now) {
+            setUpiRemainingSeconds(Math.ceil((upiExpiresAt - now) / 1000));
+            setUpiModalVisible(true);
+            return;
+        }
+
         try {
-            const payload = buildPluralOrderPayload(cartItems as any);
-            const headers = { headers: { 'Content-Type': 'application/json', 'user': 'sadmin1234', 'pwd': 'sadmin1234' } }
-            const validateResp = await makeAPIRequest(`${apiBaseUrl}validateOrder`, payload, 'POST', headers);
-
-            if (validateResp && validateResp.verified) {
-                setLoaderText('Generating Payment Order...');
-                const tempPayload = { ...payload, paymentVendor: 'Razorpay' }
-                const razorResp = await makeAPIRequest(`${apiBaseUrl}razororder1`, tempPayload, 'POST', headers);
-
-                if (razorResp && razorResp.order_id) {
-                    setLoaderState('payment');
-                    setLoaderText('Waiting for Payment...');
-
-                    const options = {
-                        ...razorResp,
-                        amount: Math.round(Number(razorResp.amount) * 100),
-                        description: razorResp.description || 'Devourin Kiosk Order',
-                        name: razorResp.name || 'Devourin',
-                        theme: { color: razorResp.theme?.color || '#D95C20' },
-                    };
-                    delete (options as any)['callback_url'];
-
-                    if (Platform.OS === 'web') {
-                        const isScriptLoaded = await loadRazorpayScript();
-                        if (!isScriptLoaded) throw new Error('Razorpay script failed to load');
-
-                        const rzp = new (window as any).Razorpay({
-                            ...options,
-                            handler: (response: any) => handleSuccess(response, razorResp),
-                            modal: { ondismiss: () => handleFailure({ description: 'Payment Dismissed' }) }
-                        });
-                        rzp.open();
-                    } else {
-                        RazorpayCheckout.open(options)
-                            .then((response: any) => handleSuccess(response, razorResp))
-                            .catch(handleFailure);
-                    }
-                } else {
-                    throw new Error('Failed to create Razorpay order');
-                }
-            } else {
-                throw new Error('Order validation failed');
+            const razorResp = await createRazorOrder();
+            const qrImageUrl = razorResp?.qr_image;
+            console.log('Generated UPI QR Image URL:', qrImageUrl);
+            if (!qrImageUrl) {
+                throw new Error('UPI QR code was not returned');
             }
+
+            setUpiOrderResponse(razorResp);
+            setUpiExpiresAt(Date.now() + UPI_PAYMENT_TIMEOUT_SECONDS * 1000);
+            setUpiRemainingSeconds(UPI_PAYMENT_TIMEOUT_SECONDS);
+            setLoaderState('idle');
+            setLoaderText('');
+            setUpiModalVisible(true);
+        } catch (e) {
+            console.log(e);
+            setLoaderState('error');
+            setLoaderText('');
+            Toast.show({ type: 'error', text1: 'Unable to start UPI payment. Please try again.' });
+        }
+    };
+
+    const handleOtherPayment = async () => {
+        try {
+            const razorResp = await createRazorOrder();
+            await openRazorpayCheckout(razorResp);
         } catch (e) {
             console.log(e);
             setLoaderState('error');
             setLoaderText('');
             Toast.show({ type: 'error', text1: 'Order failed. Please try again.' });
         }
+    };
+
+    const placeOrder = () => {
+        if (selectedPaymentMethod === 'upi') {
+            handleUpiPayment();
+            return;
+        }
+
+        handleOtherPayment();
     };
 
     const isLoading = loaderState === 'payment' || loaderState === 'placing' || loaderState === 'success';
@@ -143,11 +276,11 @@ export default function PaymentSelection() {
             </View>
 
             <View style={styles.mainContent}>
-                <Image
+                {/* <Image
                     source={require('../assets/icons/sihi_logo.png')}
                     style={styles.sihiLogo}
                     resizeMode="contain"
-                />
+                /> */}
                 <View style={styles.paymentCard}>
                     {/* Header: Security Badge */}
                     <View style={styles.paymentBadge}>
@@ -156,7 +289,7 @@ export default function PaymentSelection() {
                     </View>
 
                     <CustomText fontFamily={theme.fonts.SemiBold} color="#666" style={styles.instructionText}>
-                        Please complete your payment using{"\n"}Razorpay to process your order.
+                        Choose how you would like to complete your payment.
                     </CustomText>
 
                     {/* Order Summary Section */}
@@ -211,6 +344,36 @@ export default function PaymentSelection() {
                         </CustomText>
                     </View>
 
+                    <View style={styles.methodGrid}>
+                        <TouchableOpacity
+                            activeOpacity={0.85}
+                            onPress={() => setSelectedPaymentMethod('upi')}
+                            style={[styles.methodCard, selectedPaymentMethod === 'upi' && styles.methodCardSelected]}
+                        >
+                            <View style={[styles.methodIcon, selectedPaymentMethod === 'upi' && styles.methodIconSelected]}>
+                                <Ionicons name="qr-code-outline" size={28} color={selectedPaymentMethod === 'upi' ? '#fff' : '#D95C20'} />
+                            </View>
+                            <CustomText fontFamily={theme.fonts.Bold} color="#162640" fontSize={theme.fontSize.medium}>UPI QR</CustomText>
+                            {selectedPaymentMethod === 'upi' && (
+                                <Ionicons name="checkmark-circle" size={22} color="#D95C20" style={styles.methodCheck} />
+                            )}
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            activeOpacity={0.85}
+                            onPress={() => setSelectedPaymentMethod('other')}
+                            style={[styles.methodCard, selectedPaymentMethod === 'other' && styles.methodCardSelected]}
+                        >
+                            <View style={[styles.methodIcon, selectedPaymentMethod === 'other' && styles.methodIconSelected]}>
+                                <Ionicons name="card-outline" size={28} color={selectedPaymentMethod === 'other' ? '#fff' : '#D95C20'} />
+                            </View>
+                            <CustomText fontFamily={theme.fonts.Bold} color="#162640" fontSize={theme.fontSize.medium}>Cards & More</CustomText>
+                            {selectedPaymentMethod === 'other' && (
+                                <Ionicons name="checkmark-circle" size={22} color="#D95C20" style={styles.methodCheck} />
+                            )}
+                        </TouchableOpacity>
+                    </View>
+
                     {/* Pay Button */}
                     <TouchableOpacity
                         onPress={placeOrder}
@@ -228,7 +391,9 @@ export default function PaymentSelection() {
                                 <ActivityIndicator color="#fff" />
                             ) : (
                                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                    <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.large} color="#fff">PAY NOW</CustomText>
+                                    <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.large} color="#fff">
+                                        {selectedPaymentMethod === 'upi' ? 'PAY WITH UPI' : 'PAY WITH CARD'}
+                                    </CustomText>
                                     <Ionicons name="arrow-forward" size={24} color="#fff" style={{ marginLeft: 10 }} />
                                 </View>
                             )}
@@ -253,6 +418,14 @@ export default function PaymentSelection() {
                     </CustomText>
                 </View>
             )}
+
+            <UpiModal
+                visible={upiModalVisible}
+                onClose={() => setUpiModalVisible(false)}
+                payableAmount={totalPayable}
+                qrImageUrl={upiOrderResponse?.qr_image}
+                remainingSeconds={upiRemainingSeconds}
+            />
         </SafeAreaView>
     );
 }
@@ -321,7 +494,45 @@ const styles = StyleSheet.create({
         color: '#777',
         lineHeight: 24,
         fontSize: 16,
-        marginBottom: 35,
+        marginBottom: 24,
+    },
+    methodGrid: {
+        width: '100%',
+        flexDirection: 'row',
+        gap: theme.spacing.md,
+        marginBottom: 28,
+    },
+    methodCard: {
+        flex: 1,
+        minHeight: 108,
+        borderWidth: 1.5,
+        borderColor: '#ECEFF3',
+        borderRadius: 18,
+        padding: theme.spacing.md,
+        backgroundColor: '#fff',
+        position: 'relative',
+        justifyContent: 'center',
+    },
+    methodCardSelected: {
+        borderColor: '#D95C20',
+        backgroundColor: '#FFF7F1',
+    },
+    methodIcon: {
+        width: 48,
+        height: 48,
+        borderRadius: 14,
+        backgroundColor: '#FFF1E8',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: theme.spacing.md,
+    },
+    methodIconSelected: {
+        backgroundColor: '#D95C20',
+    },
+    methodCheck: {
+        position: 'absolute',
+        right: 12,
+        top: 12,
     },
     summaryContainer: {
         width: '100%',

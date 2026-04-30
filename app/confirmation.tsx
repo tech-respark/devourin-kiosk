@@ -20,7 +20,7 @@ export default function ConfirmationScreen() {
 
     const scaleAnim = useRef(new Animated.Value(0)).current;
     const opacityAnim = useRef(new Animated.Value(0)).current;
-    const [seconds, setSeconds] = React.useState(5);
+    const [seconds, setSeconds] = React.useState(10);
     const printAttempted = useRef(false);
 
     useEffect(() => {

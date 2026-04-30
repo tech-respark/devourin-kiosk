@@ -196,7 +196,6 @@ export const AddOnPortionModal: React.FC<AddOnPortionModalProps> = ({ visible, i
 
     if (!visible || !item) return null;
 
-    console.log(item)
     return (
         <View style={{ ...StyleSheet.absoluteFillObject, zIndex: 99999 }}>
             <View style={styles.overlay}>

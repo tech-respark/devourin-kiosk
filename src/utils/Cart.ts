@@ -156,7 +156,7 @@ export const buildKioskOrderPayload = (
             id: null,
             orderId: null,
             staffId,
-            status: 'QSR_KOT_BILL_SETTLED',
+            status: 'NO_STATUS',
             statusTime: '',
         },
         discounts: [],
@@ -299,7 +299,7 @@ export const buildPluralOrderPayload = (
         currentStatus: {
             id: null,
             orderId: null,
-            status: "QSR_KOT_BILL_SETTLED",
+            status: "NO_STATUS",
             statusTime: "",
             remark: null,
             staffId: null

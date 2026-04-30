@@ -141,7 +141,7 @@ const styles = StyleSheet.create({
         position: 'relative',
     },
     imagePlaceholder: {
-        height: 200,
+        height: 280,
         borderRadius: theme.border.md,
         alignItems: 'center',
         justifyContent: 'center',
