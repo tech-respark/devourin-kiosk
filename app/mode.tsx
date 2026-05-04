@@ -163,7 +163,7 @@ export default function ModeSelectionScreen() {
                             color="#222"
                             style={styles.questionText}
                         >
-                            How would you like to order?
+                            Ready to order ?
                         </CustomText>
                     </View>
 
