@@ -211,7 +211,8 @@ export const buildKioskOrderPayload = (
  * Matches the user-provided structure precisely.
  */
 export const buildPluralOrderPayload = (
-    cartItems: CartItem[]
+    cartItems: CartItem[],
+    isQRPayment: boolean,
 ) => {
     const state = store.getState();
     const branchId = state.user.branchId;
@@ -227,7 +228,7 @@ export const buildPluralOrderPayload = (
 
     const orderITems = cartItems.map(item => {
         const { itemSubtotal, itemGrandTotal, taxBreakdown, itemNetBase, addonNetBase } = calculateItemTotals(item, isReverseCalculation, isScInclusive);
-        
+
         // Sum individual tax components for itemTax field
         const itemTotalTax = Object.values(taxBreakdown).reduce((a, b) => a + b, 0);
 
@@ -299,7 +300,7 @@ export const buildPluralOrderPayload = (
         currentStatus: {
             id: null,
             orderId: null,
-            status: "NO_STATUS",
+            status: isQRPayment ? "NO_STATUS" : "QSR_KOT_BILL_SETTLED",
             statusTime: "",
             remark: null,
             staffId: null

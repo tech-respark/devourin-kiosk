@@ -20,6 +20,9 @@ import { useDispatch, useSelector } from 'react-redux';
 import { BottomDock } from '../components/BottomDock';
 import { CancelOrderModal } from '../components/CancelOrderModal';
 import CustomText from '../components/CustomText';
+import { TaxBreakdownModal } from '../components/TaxBreakdownModal';
+import { selectApplicationConfigs } from '../src/store/userSlice';
+import { calculateCartTotals } from '../src/utils/taxCalculation';
 import {
     clearCart,
     removeFromCart,
@@ -38,9 +41,14 @@ export default function MyOrderCart() {
     const cartItems = useSelector(selectCartItems);
     const itemImages = useSelector(selectItemImages);
     const subTotal = useSelector(selectCartSubtotal);
+    const applicationConfigs = useAppSelector(selectApplicationConfigs);
     const currency = useAppSelector(selectMobileSettings)?.['currency_symbol'] || '₹';
 
     const [showCancelModal, setShowCancelModal] = React.useState(false);
+    const [showTaxModal, setShowTaxModal] = React.useState(false);
+
+    const cartTotals = React.useMemo(() => calculateCartTotals(cartItems as any, applicationConfigs), [cartItems, applicationConfigs]);
+    const totalPayable = cartTotals.grandTotal;
 
     React.useEffect(() => {
         // Pre-load payment script for smooth transition
@@ -190,7 +198,7 @@ export default function MyOrderCart() {
             {/* Dock Component */}
             <BottomDock
                 itemCount={totalQty}
-                subTotal={subTotal}
+                subTotal={totalPayable}
                 onCancel={() => setShowCancelModal(true)}
                 onProceed={() => {
                     if (CUSTOMER_DETAILS_REQUIRED) {
@@ -200,11 +208,17 @@ export default function MyOrderCart() {
                     }
                 }}
                 proceedText="Confirm"
+                onShowInfo={() => setShowTaxModal(true)}
             />
             <CancelOrderModal
                 visible={showCancelModal}
                 onClose={() => setShowCancelModal(false)}
                 onConfirm={handleConfirmCancel}
+            />
+            <TaxBreakdownModal
+                visible={showTaxModal}
+                onClose={() => setShowTaxModal(false)}
+                cartItems={cartItems}
             />
         </SafeAreaView>
     );

@@ -15,6 +15,7 @@ interface BottomDockProps {
     onProceed?: () => void;
     proceedText?: string;
     hideProceed?: boolean;
+    onShowInfo?: () => void;
 }
 
 export const BottomDock: React.FC<BottomDockProps> = ({
@@ -23,7 +24,8 @@ export const BottomDock: React.FC<BottomDockProps> = ({
     onCancel,
     onProceed,
     hideProceed,
-    proceedText = "Proceed"
+    proceedText = "Proceed",
+    onShowInfo
 }) => {
     const mobileSettings = useAppSelector(selectMobileSettings);
     const currency = mobileSettings?.['currency_symbol'] || '₹';
@@ -53,11 +55,18 @@ export const BottomDock: React.FC<BottomDockProps> = ({
                 </View>
 
                 <View style={styles.totalSection}>
-                    <CustomText fontFamily={theme.fonts.SemiBold} fontSize={theme.fontSize.small} color={theme.colors.grayDark}>
-                        Sub Total
-                    </CustomText>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                        <CustomText fontFamily={theme.fonts.SemiBold} fontSize={theme.fontSize.small} color={theme.colors.grayDark}>
+                            Order Total
+                        </CustomText>
+                        {onShowInfo && (
+                            <TouchableOpacity onPress={onShowInfo}>
+                                <Ionicons name="information-circle-outline" size={18} color={theme.colors.grayDark} />
+                            </TouchableOpacity>
+                        )}
+                    </View>
                     <CustomText fontFamily={theme.fonts.Bold} fontSize={theme.fontSize.headingX} color={theme.colors.black}>
-                        {currency}{subTotal.toFixed(1)}
+                        {currency}{subTotal.toFixed(2)}
                     </CustomText>
                 </View>
             </View>
