@@ -191,7 +191,7 @@ export default function ModeSelectionScreen() {
                 <View style={styles.footer}>
                     <Pressable
                         onLongPress={handleLogoLongPress}
-                        delayLongPress={3000}
+                        delayLongPress={2000}
                         style={styles.poweredContainer}
                         // @ts-ignore
                         onContextMenu={(e: any) => e.preventDefault()}

@@ -155,11 +155,11 @@ export default function PaymentSelection() {
         });
     };
 
-    const createRazorOrder = async () => {
+    const createRazorOrder = async (isQRPayment: boolean = false) => {
         setLoaderState('placing');
         setLoaderText('Validating Order...');
 
-        const payload = buildPluralOrderPayload(cartItems as any);
+        const payload = buildPluralOrderPayload(cartItems as any, isQRPayment);
         const headers = { headers: { 'Content-Type': 'application/json', 'user': 'sadmin1234', 'pwd': 'sadmin1234' } }
         const validateResp = await makeAPIRequest(`${apiBaseUrl}validateOrder`, payload, 'POST', headers);
 
@@ -221,7 +221,7 @@ export default function PaymentSelection() {
         }
 
         try {
-            const razorResp = await createRazorOrder();
+            const razorResp = await createRazorOrder(true);
             const qrImageUrl = razorResp?.qr_image;
             console.log('Generated UPI QR Image URL:', qrImageUrl);
             if (!qrImageUrl) {
