@@ -118,13 +118,15 @@ export interface MenuCategoryType {
     imagePath?: string;
 }
 
-export const groupPortions = (items: any[]) => {
+export const groupPortions = (items: any[], availableItems: string[]) => {
     const map = new Map<number, any[]>();
     items.forEach(item => {
-        if (!map.has(item.itemId)) map.set(item.itemId, []);
-        const existing = map.get(item.itemId);
-        if (existing) {
-            existing.push(item);
+        if (availableItems?.includes(item.itemId)) {
+            if (!map.has(item.itemId)) map.set(item.itemId, []);
+            const existing = map.get(item.itemId);
+            if (existing) {
+                existing.push(item);
+            }
         }
     });
     const result: any[] = [];

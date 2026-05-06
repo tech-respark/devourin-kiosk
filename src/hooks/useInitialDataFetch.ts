@@ -2,7 +2,7 @@ import { useState } from 'react';
 import Toast from 'react-native-toast-message';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { setAddOnCategories, setAddOnItems, setCategories, setItemImages, setMenuItems, setOrganisedMenuItems } from '../store/menuSlice';
-import { selectBranchId, setApplicationConfigs, setBranchConfigs, setMobileSettings } from '../store/userSlice';
+import { selectBranchId, setApplicationConfigs, setBranchConfigs, setLastSyncDate, setMobileSettings } from '../store/userSlice';
 import { NETWORK_ERROR, useEnvironment } from '../utils/Constants';
 import { groupPortions, makeAPIRequest, organizeMenu } from '../utils/Helper';
 
@@ -23,12 +23,22 @@ export const useInitialDataFetch = () => {
         return [];
     };
 
+    const getCurrentItems = async () => {
+        const url = `${apiBaseUrl}currentslotitems?br=${branchId}&src=SPARK`;
+        const response = await makeAPIRequest(url, null, "GET");
+        if (response) {
+            return response?.itemids ? response.itemids.split(",").map((item: string) => parseInt(item)) : [];
+        }
+        return [];
+    };
+
     // Fetch Menu Items Grouped
     const getMenuItems = async (categoriesData: any) => {
         const url = `${apiBaseUrl}getmenubytypeandbranch?type=Dinein&id=${branchId}`;
         const response = await makeAPIRequest(url, null, "GET");
         if (response) {
-            const groupedResult = groupPortions(response);
+            const availableItems = await getCurrentItems();
+            const groupedResult = groupPortions(response, availableItems);
             dispatch(setMenuItems(groupedResult));
             const organized = organizeMenu(groupedResult, categoriesData);
             dispatch(setOrganisedMenuItems(organized));
@@ -120,6 +130,7 @@ export const useInitialDataFetch = () => {
                 getApplicationConfigs(),
                 getItemImages()
             ]);
+            dispatch(setLastSyncDate(new Date().toDateString()));
         } catch (error) {
             Toast.show({ text1: NETWORK_ERROR, type: 'error' });
         } finally {
