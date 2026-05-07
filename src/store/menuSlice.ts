@@ -2,29 +2,29 @@ import { PayloadAction, createSlice } from "@reduxjs/toolkit";
 import { RootState } from "./index";
 
 export interface MenuState {
-    menuItems: any[];
     organisedMenuItems: any[];
     categories: any[];
     addOnItems: any[];
     addOnCategories: any[];
     itemImages: any;
+    rowMenuItems: any[];
 }
 
 const initialState: MenuState = {
-    menuItems: [],
     organisedMenuItems: [],
     categories: [],
     addOnItems: [],
     addOnCategories: [],
-    itemImages: {}
+    itemImages: {},
+    rowMenuItems: [],
 };
 
 const menuSlice = createSlice({
     name: 'menu',
     initialState,
     reducers: {
-        setMenuItems: (state, action: PayloadAction<any[]>) => {
-            state.menuItems = action.payload;
+        setRowMenuItems: (state, action: PayloadAction<any[]>) => {
+            state.rowMenuItems = action.payload;
         },
         setCategories: (state, action: PayloadAction<any[]>) => {
             state.categories = action.payload;
@@ -42,27 +42,27 @@ const menuSlice = createSlice({
             state.itemImages = action.payload;
         },
         resetMenu: (state) => {
-            state.menuItems = [];
             state.organisedMenuItems = [];
             state.categories = [];
             state.addOnItems = [];
             state.addOnCategories = [];
             state.itemImages = {};
+            state.rowMenuItems = [];
         }
     },
 });
 
 export const {
-    setMenuItems,
     setCategories,
     setOrganisedMenuItems,
     setAddOnItems,
     setAddOnCategories,
     setItemImages,
-    resetMenu
+    resetMenu,
+    setRowMenuItems,
 } = menuSlice.actions;
 
-export const selectMenuItems = (state: RootState) => state.menu.menuItems;
+export const selectRowMenuItems = (state: RootState) => state.menu.rowMenuItems;
 export const selectOrganisedMenuItems = (state: RootState) => state.menu.organisedMenuItems;
 export const selectCategories = (state: RootState) => state.menu.categories;
 export const selectAddOnItems = (state: RootState) => state.menu.addOnItems;

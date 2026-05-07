@@ -1,6 +1,7 @@
 import { Platform } from "react-native";
 import Toast from "react-native-toast-message";
 import { store } from "../store";
+import { setOrganisedMenuItems } from "../store/menuSlice";
 import { LOCAL_IP } from "./Constants";
 
 // Dynamic script loader for Razorpay Web
@@ -210,4 +211,20 @@ export const getLocalPrinterBaseUrl = () => {
     if (Platform.OS === 'web') return `http://${__DEV__ ? LOCAL_IP : 'localhost'}:7009`;
     if (Platform.OS === 'android') return `http://${__DEV__ ? LOCAL_IP : 'localhost'}:7009`;
     return `http://${__DEV__ ? LOCAL_IP : 'localhost'}:7009`;
+};
+
+export const getCurrentItems = async (apiBaseUrl: string, branchId: number) => {
+    const url = `${apiBaseUrl}currentslotitems?br=${branchId}&src=SPARK`;
+    const response = await makeAPIRequest(url, null, "GET");
+    if (response) {
+        return response?.itemids ? response.itemids.split(",").map((item: string) => parseInt(item)) : [];
+    }
+    return [];
+};
+
+export const settingMenuItems = async (res: any, categoriesData: any, apiBaseUrl: string, branchId: number) => {
+    const availableItems = await getCurrentItems(apiBaseUrl, branchId);
+    const groupedResult = groupPortions(res, availableItems);
+    const organized = organizeMenu(groupedResult, categoriesData);
+    store.dispatch(setOrganisedMenuItems(organized));
 };

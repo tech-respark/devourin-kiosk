@@ -1,4 +1,5 @@
-import { getLocalPrinterBaseUrl, makeAPIRequest } from '@/src/utils/Helper';
+import { useEnvironment } from '@/src/utils/Constants';
+import { getLocalPrinterBaseUrl, makeAPIRequest, settingMenuItems } from '@/src/utils/Helper';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -11,8 +12,8 @@ import { AdminModal } from '../components/AdminModal';
 import CustomText from '../components/CustomText';
 import { useInitialDataFetch } from '../src/hooks/useInitialDataFetch';
 import { clearCart } from '../src/store/cartSlice';
-import { resetMenu, selectOrganisedMenuItems } from '../src/store/menuSlice';
-import { resetUser, selectLastSyncDate } from '../src/store/userSlice';
+import { resetMenu, selectCategories, selectOrganisedMenuItems, selectRowMenuItems } from '../src/store/menuSlice';
+import { resetUser, selectBranchId } from '../src/store/userSlice';
 import { theme } from '../src/styles/theme';
 
 const LogoImage = require('../assets/icons/menu_image.png');
@@ -20,8 +21,11 @@ const LogoImage = require('../assets/icons/menu_image.png');
 export default function ModeSelectionScreen() {
     const router = useRouter();
     const dispatch = useDispatch();
+    const rawMenu = useSelector(selectRowMenuItems);
+    const categories = useSelector(selectCategories);
+    const { apiBaseUrl } = useEnvironment();
+    const branchId = useSelector(selectBranchId);
     const organisedMenu = useSelector(selectOrganisedMenuItems);
-    const lastSyncDate = useSelector(selectLastSyncDate);
     const { callInitialSetUpAPIAsync, loading } = useInitialDataFetch();
 
     // If data already exists in redux, we don't need to show "Synchronizing" loader
@@ -87,15 +91,8 @@ export default function ModeSelectionScreen() {
     }, []);
 
     const handleSelectMode = async (mode: string) => {
-        // Check for date change since last sync
-        const currentDate = new Date().toDateString();
-        if (!lastSyncDate || lastSyncDate !== currentDate) {
-            console.log("Date changed since last sync. Refreshing data...");
-            setIsConfigured(false);
-            await callInitialSetUpAPIAsync();
-            setIsConfigured(true);
-        }
-
+        //here we will call getCurrentItems again and we need to setup the menu again now you check the easiest way to do it ( less complexity )
+        await settingMenuItems(rawMenu, categories, apiBaseUrl, branchId);
         // Trigger Fullscreen on Web to provide a native kiosk experience
         if (Platform.OS === 'web' && document.documentElement.requestFullscreen) {
             document.documentElement.requestFullscreen().catch(() => {

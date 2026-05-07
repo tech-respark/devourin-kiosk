@@ -17,7 +17,6 @@ interface UserState {
     taxes: any | null;
     customerDetails: CustomerDetails | null;
     applicationConfigs: any | null;
-    lastSyncDate: string | null;
 }
 
 const initialState: UserState = {
@@ -30,7 +29,6 @@ const initialState: UserState = {
     taxes: null,
     customerDetails: null,
     applicationConfigs: null,
-    lastSyncDate: null,
 };
 
 const userSlice = createSlice({
@@ -67,9 +65,6 @@ const userSlice = createSlice({
         setApplicationConfigs: (state, action: PayloadAction<any>) => {
             state.applicationConfigs = action.payload;
         },
-        setLastSyncDate: (state, action: PayloadAction<string>) => {
-            state.lastSyncDate = action.payload;
-        },
         logoutStaff: (state) => {
             state.userData = null;
         },
@@ -96,7 +91,6 @@ export const {
     setCustomerDetails,
     clearCustomerDetails,
     setApplicationConfigs,
-    setLastSyncDate,
     logoutStaff,
     resetUser,
 } = userSlice.actions;
@@ -130,6 +124,5 @@ export const selectBranchConfig = (key: string) => (state: any) => {
 export const selectTaxes = (state: any) => state.user.taxes;
 export const selectCustomerDetails = (state: any) => state.user.customerDetails;
 export const selectApplicationConfigs = (state: any) => state.user.applicationConfigs;
-export const selectLastSyncDate = (state: any) => state.user.lastSyncDate;
 
 export default userSlice.reducer;
