@@ -218,7 +218,8 @@ export const getCurrentItems = async (apiBaseUrl: string, branchId: number) => {
     const url = `${apiBaseUrl}currentslotitems?br=${branchId}&src=SPARK`;
     const response = await makeAPIRequest(url, null, "GET");
     if (response) {
-        return response?.itemids ? response.itemids.split(",").map((item: string) => parseInt(item)) : [];
+        if (response.itemids === "null" || !response.itemids) return [];
+        return response.itemids.split(",").map((item: string) => parseInt(item.trim())).filter((id: number) => !isNaN(id));
     }
     return [];
 };
