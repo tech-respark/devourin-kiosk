@@ -119,10 +119,11 @@ export interface MenuCategoryType {
     imagePath?: string;
 }
 
-export const groupPortions = (items: any[], availableItems: string[]) => {
+export const groupPortions = (items: any[], availableItems: any[]) => {
     const map = new Map<number, any[]>();
+    const showAll = !availableItems || availableItems.length === 0;
     items.forEach(item => {
-        if (availableItems?.includes(item.itemId)) {
+        if (showAll || availableItems.includes(item.itemId)) {
             if (!map.has(item.itemId)) map.set(item.itemId, []);
             const existing = map.get(item.itemId);
             if (existing) {
