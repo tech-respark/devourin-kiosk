@@ -33,7 +33,7 @@ export default function SplashScreen() {
   useEffect(() => {
     const timer = setTimeout(() => {
       if (dbName) {
-        router.replace('/mode');
+        router.replace('/module-selection' as any);
       } else {
         router.replace('/login');
       }

@@ -14,8 +14,8 @@ export const KioskManager: React.FC<{ children: React.ReactNode }> = ({ children
     const timerRef = useRef<NodeJS.Timeout | null>(null);
 
     const resetSession = () => {
-        // Don't reset if we are already on the landing or index pages
-        if (pathname === '/mode' || pathname === '/' || pathname === '/login') return;
+        // Don't reset if we are already on the landing, index, or order tracking pages
+        if (pathname === '/mode' || pathname === '/' || pathname === '/login' || pathname === '/order-tracking') return;
 
         console.log("Inactivity detected. Resetting kiosk session...");
         dispatch(clearCart());

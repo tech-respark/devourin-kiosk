@@ -130,6 +130,7 @@ export default function RootLayout() {
           <Stack screenOptions={{ headerShown: false }}>
               <Stack.Screen name="index" />
               <Stack.Screen name="login" />
+              <Stack.Screen name="(modules)" />
               <Stack.Screen name="mode" />
               <Stack.Screen name="menu" />
               <Stack.Screen name="cart" />

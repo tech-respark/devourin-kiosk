@@ -75,7 +75,7 @@ export default function LoginScreen() {
                     if (await checkBranchValidity(baseUrl, branch.branchId)) {
                         dispatch(setBranchId(branch.branchId.toString()));
                         Toast.show({ type: "success", text1: 'Device Configured Successfully' });
-                        router.replace('/mode');
+                        router.replace('/module-selection' as any);
                     }
                 } else {
                     Toast.show({ type: "error", text1: "No branches found for this account" });
@@ -100,7 +100,7 @@ export default function LoginScreen() {
 
         if (await checkBranchValidity(baseUrl, selectedBranch.branchId)) {
             dispatch(setBranchId(selectedBranch.branchId.toString()));
-            router.replace('/mode');
+            router.replace('/module-selection' as any);
         }
     };
 
