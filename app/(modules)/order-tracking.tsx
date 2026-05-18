@@ -5,8 +5,8 @@ import { makeAPIRequest } from '@/src/utils/Helper';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import moment from 'moment';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Animated, ImageBackground, Platform, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ImageBackground, Platform, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ConfirmationModal } from '../../components/ConfirmationModal';
 import CustomText from '../../components/CustomText';
@@ -22,8 +22,8 @@ interface TrackingOrder {
 }
 
 const POLL_INTERVAL_MS = 10000;
-const SCROLL_TICK_MS = 50;
-const SCROLL_STEP = 0.8;
+const SCROLL_TICK_MS = 30;
+const SCROLL_STEP = 0.6;
 
 const OrderColumn = ({ title, orders, titleColor, cardBgColor, cardTextColor }: {
     title: string;
@@ -32,9 +32,96 @@ const OrderColumn = ({ title, orders, titleColor, cardBgColor, cardTextColor }: 
     cardBgColor: string;
     cardTextColor: string;
 }) => {
+    const scrollViewRef = useRef<ScrollView>(null);
+    const [layoutHeight, setLayoutHeight] = useState(0);
+    const [contentHeight, setContentHeight] = useState(0);
+
+    const scrollYRef = useRef(0);
+    const directionRef = useRef(1); // 1 = down, -1 = up
+    const stateRef = useRef<'scrolling' | 'paused'>('scrolling');
+    const pauseTicksRef = useRef(0);
+    const isDraggingRef = useRef(false);
+
+    const PAUSE_DURATION_TICKS = 100; // 100 ticks * 30ms = 3000ms (3 seconds)
+
+    useEffect(() => {
+        const maxScrollY = contentHeight - layoutHeight;
+
+        // If content fits completely, don't scroll and reset scroll to top
+        if (maxScrollY <= 0) {
+            scrollYRef.current = 0;
+            scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+            return;
+        }
+
+        // Clamp current scroll position to new max scroll limit if list shrank
+        if (scrollYRef.current > maxScrollY) {
+            scrollYRef.current = maxScrollY;
+            scrollViewRef.current?.scrollTo({ y: maxScrollY, animated: true });
+        }
+
+        const interval = setInterval(() => {
+            if (isDraggingRef.current) return;
+
+            const currentMax = contentHeight - layoutHeight;
+            if (currentMax <= 0) return;
+
+            if (stateRef.current === 'paused') {
+                pauseTicksRef.current -= 1;
+                if (pauseTicksRef.current <= 0) {
+                    stateRef.current = 'scrolling';
+                }
+                return;
+            }
+
+            if (stateRef.current === 'scrolling') {
+                let nextY = scrollYRef.current + directionRef.current * SCROLL_STEP;
+
+                if (directionRef.current === 1) {
+                    // Scrolling down
+                    if (nextY >= currentMax) {
+                        nextY = currentMax;
+                        directionRef.current = -1; // Change direction to up
+                        stateRef.current = 'paused';
+                        pauseTicksRef.current = PAUSE_DURATION_TICKS;
+                    }
+                } else {
+                    // Scrolling up
+                    if (nextY <= 0) {
+                        nextY = 0;
+                        directionRef.current = 1; // Change direction to down
+                        stateRef.current = 'paused';
+                        pauseTicksRef.current = PAUSE_DURATION_TICKS;
+                    }
+                }
+
+                scrollYRef.current = nextY;
+                scrollViewRef.current?.scrollTo({ y: nextY, animated: false });
+            }
+        }, SCROLL_TICK_MS);
+
+        return () => clearInterval(interval);
+    }, [layoutHeight, contentHeight]);
+
+    const handleScrollBeginDrag = () => {
+        isDraggingRef.current = true;
+    };
+
+    const handleScrollEndDrag = (event: any) => {
+        scrollYRef.current = event.nativeEvent.contentOffset.y;
+        isDraggingRef.current = false;
+        // Pause for a brief moment after user interaction to let them read before resuming
+        stateRef.current = 'paused';
+        pauseTicksRef.current = 60; // Pause for ~2 seconds
+    };
+
+    const handleMomentumScrollEnd = (event: any) => {
+        scrollYRef.current = event.nativeEvent.contentOffset.y;
+        isDraggingRef.current = false;
+    };
 
     return (
-        <View style={styles.column}>
+        <View style={[styles.column, { pointerEvents: 'none' }]}>
             <View style={styles.columnHeader}>
                 {title === 'PREPARING' ? (
                     <Image source={PREPARING_LOGO} style={styles.statusIcon} />
@@ -46,11 +133,17 @@ const OrderColumn = ({ title, orders, titleColor, cardBgColor, cardTextColor }: 
                 </CustomText>
             </View>
 
-            <Animated.ScrollView
+            <ScrollView
+                ref={scrollViewRef}
                 style={styles.orderScroll}
                 contentContainerStyle={styles.orderGrid}
                 showsVerticalScrollIndicator={false}
                 scrollEventThrottle={16}
+                onLayout={(e) => setLayoutHeight(e.nativeEvent.layout.height)}
+                onContentSizeChange={(w, h) => setContentHeight(h)}
+                onScrollBeginDrag={handleScrollBeginDrag}
+                onScrollEndDrag={handleScrollEndDrag}
+                onMomentumScrollEnd={handleMomentumScrollEnd}
             >
                 {orders.map(order => (
                     <View key={order.orderId} style={[styles.orderCard, { backgroundColor: cardBgColor }]}>
@@ -65,7 +158,7 @@ const OrderColumn = ({ title, orders, titleColor, cardBgColor, cardTextColor }: 
                         </CustomText>
                     </View>
                 ))}
-            </Animated.ScrollView>
+            </ScrollView>
         </View>
     );
 };
