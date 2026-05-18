@@ -176,7 +176,7 @@ export default function OrderTrackingScreen() {
 
     const loadOrders = useCallback(async () => {
         const url = apiBaseUrl + `kdsreadyordersbyday?brid=${branchId}&orderday=${moment().format('YYYY-MM-DD')}`;
-        const response = await makeAPIRequest(url, null, 'GET');
+        const response = await makeAPIRequest(url, null, 'POST');
         if (response?.length > 0) {
             setOrders(response);
         }
