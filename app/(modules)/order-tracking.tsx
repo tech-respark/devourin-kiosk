@@ -4,6 +4,7 @@ import { useEnvironment } from '@/src/utils/Constants';
 import { makeAPIRequest } from '@/src/utils/Helper';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
+import moment from 'moment';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Animated, ImageBackground, Platform, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -11,15 +12,13 @@ import { ConfirmationModal } from '../../components/ConfirmationModal';
 import CustomText from '../../components/CustomText';
 import { theme } from '../../src/styles/theme';
 
-type OrderStatus = 'PREPARING' | 'READY';
-
 const PREPARING_LOGO = require('../../assets/icons/preparing.png');
 const READY_LOGO = require('../../assets/icons/ready.png');
 
 interface TrackingOrder {
-    id: string;
-    orderNumber: string;
-    status: OrderStatus;
+    invoiceNo: string;
+    orderId: string;
+    ready: boolean;
 }
 
 const POLL_INTERVAL_MS = 10000;
@@ -54,7 +53,7 @@ const OrderColumn = ({ title, orders, titleColor, cardBgColor, cardTextColor }: 
                 scrollEventThrottle={16}
             >
                 {orders.map(order => (
-                    <View key={order.id} style={[styles.orderCard, { backgroundColor: cardBgColor }]}>
+                    <View key={order.orderId} style={[styles.orderCard, { backgroundColor: cardBgColor }]}>
                         <CustomText
                             fontFamily={theme.fonts.Medium}
                             fontSize={44}
@@ -62,7 +61,7 @@ const OrderColumn = ({ title, orders, titleColor, cardBgColor, cardTextColor }: 
                             numberOfLines={1}
                             style={styles.orderNumber}
                         >
-                            {order.orderNumber}
+                            {order.invoiceNo}
                         </CustomText>
                     </View>
                 ))}
@@ -83,7 +82,7 @@ export default function OrderTrackingScreen() {
     const isWide = width >= 900;
 
     const loadOrders = useCallback(async () => {
-        const url = apiBaseUrl + `kdsreadyordersbyday?brid=${branchId}&orderday=${new Date().toISOString().split('T')[0]}`
+        const url = apiBaseUrl + `kdsreadyordersbyday?brid=${branchId}&orderday=${moment().format('YYYY-MM-DD')}`;
         const response = await makeAPIRequest(url, null, 'GET');
         if (response?.length > 0) {
             setOrders(response);
@@ -96,10 +95,21 @@ export default function OrderTrackingScreen() {
         return () => clearInterval(interval);
     }, [loadOrders]);
 
-    const groupedOrders = useMemo(() => ({
-        preparing: orders.filter(order => order.status === 'PREPARING'),
-        ready: orders.filter(order => order.status === 'READY'),
-    }), [orders]);
+    const groupedOrders = useMemo(() => {
+        const preparingOrders = [];
+        const readyOrders = [];
+        for (const order of orders) {
+            if (order.ready) {
+                readyOrders.push(order);
+            } else {
+                preparingOrders.push(order);
+            }
+        }
+        return {
+            preparing: preparingOrders,
+            ready: readyOrders,
+        }
+    }, [orders]);
 
     const handleLogout = () => {
         setLogoutModalVisible(false);
@@ -264,8 +274,7 @@ const styles = StyleSheet.create({
     },
     orderCard: {
         minWidth: 200,
-        flexGrow: 1,
-        flexBasis: '45%',
+        width: '45%',
         minHeight: 90,
         borderRadius: 12,
         alignItems: 'center',
